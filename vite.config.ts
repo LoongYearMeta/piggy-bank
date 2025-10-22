@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-// 替换 React 插件为 Vue 插件（处理 .vue 单文件组件）
 import vue from "@vitejs/plugin-vue";
 // 保留 Node 环境 polyfill 插件（解决浏览器兼容性）
 import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
@@ -8,7 +7,6 @@ import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
-  // 插件替换为 Vue 插件
   plugins: [vue()],
   // 保留 Node 模块别名配置（解决浏览器缺失 buffer/stream 等模块）
   resolve: {
