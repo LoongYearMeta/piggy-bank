@@ -13,11 +13,13 @@
     "vue": "^3.5.22"
   },
   "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@types/node": "^24.6.0",
-    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitejs/plugin-vue": "^5.0.0",
     "@vue/tsconfig": "^0.8.1",
     "typescript": "~5.9.3",
-    "vite": "^7.1.7",
+    "vite": "^6.0.0",
     "vue-tsc": "^3.1.0"
   }
 }
