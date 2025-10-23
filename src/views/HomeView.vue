@@ -2,97 +2,79 @@
   <div class="home-container">
     <!-- 顶部导航 -->
     <header class="header">
-      <h1 class="title">💰 存钱罐</h1>
+      <h1 class="title">存钱罐</h1>
       <router-link to="/query" class="query-btn">
-        📊 查看记录
+        解冻资产
       </router-link>
     </header>
+    <img src="../assets/piggy-bank.svg" alt="piggy-bank" class="piggy-bank-img">
 
-    <!-- 存钱罐显示区域 -->
-    <div class="piggy-bank-section">
-      <!-- <div class="piggy-bank">
-        <div class="piggy-bank-body">
-          <div class="piggy-bank-face">
-            <div class="eyes">
-              <div class="eye left"></div>
-              <div class="eye right"></div>
-            </div>
-            <div class="nose"></div>
-            <div class="mouth"></div>
-          </div>
-        </div>
-        <div class="coin-slot"></div>
-      </div> -->
-      <!-- 进度条 -->
-      <div class="progress-section">
-        <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
-        </div>
-        <p class="progress-text">存钱进度: {{ progressPercentage.toFixed(1) }}%</p>
-      </div>
-    </div>
-
-    <!-- 金额显示 -->
-    <div class="amount-section">
-      <div class="current-amount">
-        <span class="label">当前金额</span>
-        <span class="amount">¥{{ currentAmount.toFixed(2) }}</span>
-      </div>
-      <div class="target-amount" v-if="targetAmount > 0">
-        <span class="label">目标金额</span>
-        <span class="amount">¥{{ targetAmount.toFixed(2) }}</span>
-      </div>
-    </div>
-
-    <!-- 存钱表单 -->
+    <!-- 冻结资产表单 -->
     <div class="deposit-section">
-      <h2>存入金额</h2>
+      <!-- 获取钱包地址 -->
+      <button v-if="!curAddress" @click="getAddress">点击获取地址</button>
+      <p v-else>当前钱包地址: {{ curAddress }}</p>
+      <p>钱包余额: {{ curBalance.toFixed(6) }} TBC</p>
+      <!-- 冻结资产表单 -->
       <form @submit.prevent="handleDeposit" class="deposit-form">
+        <!-- 冻结金额 -->
         <div class="form-group">
-          <label for="amount">金额 (元)</label>
-          <input 
-            type="number" 
+          <label for="amount">金额 (TBC)</label>
+          <input
+            :class="errors.amountTip ? 'error-input' : ''"
             id="amount"
-            v-model.number="depositAmount" 
-            step="0.01"
-            min="0.01"
-            placeholder="请输入金额"
+            v-model.number="depositAmount"
+            placeholder="请输入冻结金额"
             required
+            @input="validateAmount"
           />
+          <Transition name="error-fade">
+            <span class="error-message" v-if="errors.amountTip">{{ errors.amountTip }}</span>
+          </Transition>
         </div>
+        <!-- 冻结时间 -->
         <div class="form-group">
-          <label for="note">备注 (可选)</label>
-          <input 
-            type="text" 
+          <label for="lockTime">冻结时间</label>
+          <div class="time-input-group">
+            <input
+              id="lockTime"
+              v-model.number="lockTime"
+              step="1"
+              min="1"
+              placeholder="请输入冻结时间"
+              required
+              @input="validateTime"
+            />
+            <select
+              v-model="lockTimeUnit"
+              @change="validateTime"
+              class="time-unit"
+            >
+              <option value="">请选择单位</option>
+              <option value="day">日</option>
+              <option value="week">周</option>
+              <option value="month">月</option>
+              <option value="year">年</option>
+              <option value="block">区块</option>
+            </select>
+          </div>
+          <Transition name="error-fade">
+            <span class="error-message" v-if="errors.timeTip">{{ errors.timeTip }}</span>
+          </Transition>
+        </div>
+        <!-- <span>对应区块高度</span> -->
+        <!-- 备注 -->
+        <div class="form-group">
+          <label for="note">备注 (选填)</label>
+          <input
+            type="text"
             id="note"
-            v-model="depositNote" 
+            v-model="depositNote"
             placeholder="备注信息"
           />
         </div>
         <button type="submit" class="deposit-btn" :disabled="!depositAmount || depositAmount <= 0">
-          💰 存入
-        </button>
-      </form>
-    </div>
-
-    <!-- 设置目标 -->
-    <div class="target-section">
-      <h2>设置目标</h2>
-      <form @submit.prevent="handleSetTarget" class="target-form">
-        <div class="form-group">
-          <label for="target">目标金额 (元)</label>
-          <input 
-            type="number" 
-            id="target"
-            v-model.number="newTargetAmount" 
-            step="0.01"
-            min="0.01"
-            placeholder="请输入目标金额"
-            required
-          />
-        </div>
-        <button type="submit" class="target-btn">
-          🎯 设置目标
+          冻结
         </button>
       </form>
     </div>
@@ -100,28 +82,146 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
+
+// 全局变量声明，声明Turing钱包的接口
+declare global {
+  interface Window {
+    Turing: {
+      connect(): Promise<void>,
+      disconnect(): Promise<void>,
+      isConnected(): Promise<boolean>,
+      getPubKey(): Promise<{ tbcPubKey: string }>,
+      getAddress(): Promise<{ tbcAddress: string}>,
+      getBalance(): Promise<{ tbc: number }>
+    }
+  }
+}
+
+// 定义类型接口-错误消息
+interface Errors {
+  amountTip: string
+  timeTip: string
+}
+
+type TimeUnit = 'day' | 'week' | 'month' | 'year' | 'block' | ''
 
 const router = useRouter()
 
 // 响应式数据
-const currentAmount = ref(0)
-const targetAmount = ref(0)
+// 冻结金额
 const depositAmount = ref<number | null>(null)
+// 备注
 const depositNote = ref('')
-const newTargetAmount = ref<number | null>(null)
-
-// 计算属性
-const progressPercentage = computed(() => {
-  if (targetAmount.value <= 0) return 0
-  return Math.min((currentAmount.value / targetAmount.value) * 100, 100)
+// 冻结时间
+const lockTime = ref<number | null>(null)
+// 冻结时间单位
+const lockTimeUnit = ref<TimeUnit>('')
+// 钱包余额
+const curBalance = ref(0)
+// 钱包地址-当前钱包地址的响应
+const curAddress = ref('')
+// 定义存储密钥的常量
+const STORAGE_KEY = 'tbc_wallet_address'
+// 错误信息
+const errors = reactive<Errors>({
+  amountTip: '',
+  timeTip: ''
 })
 
-// 方法
+// 监听
+watch(depositAmount, () => {
+  validateAmount()
+})
+
+// 冻结金额校验
+const validateAmount = ():boolean => {
+  errors.amountTip = '' // 重置错误信息
+  // 非空校验
+  if (!depositAmount.value) {
+    errors.amountTip = '请输入冻结金额'
+    return false
+  }
+  // 非负校验
+  if (depositAmount.value <= 0) {
+    errors.amountTip = '冻结金额不能为负数'
+    return false
+  }
+  // 精度校验（小数点后最多6位）
+  const amountStr = depositAmount.value.toString()
+  const decimalIndex = amountStr.indexOf('.')
+  if (decimalIndex !== -1) {
+    const decimalLength = amountStr.slice(decimalIndex + 1).length
+    if (decimalLength > 6) {
+      errors.amountTip = '金额最多精确到小数点后6位'
+      return false
+    }
+  }
+  // 余额校验
+  if (depositAmount.value > curBalance.value) {
+    errors.amountTip = '冻结金额不能大于钱包余额'
+    return false
+  }
+  return true
+}
+
+// 冻结时间校验
+const validateTime = ():boolean => {
+  errors.timeTip = '' // 重置错误信息
+  if (!lockTime.value || lockTime.value <= 0) {
+    errors.timeTip = '请输入冻结时间'
+    return false
+  }
+  return true
+}
+// 计算属性
+  // const progressPercentage = computed(() => {
+  //   if (targetAmount.value <= 0) return 0
+  //   return Math.min((currentAmount.value / targetAmount.value) * 100, 100)
+  // })
+
+// 获取钱包地址
+const getAddress = async () => {
+  // 检查是否安装了Turing钱包
+  if (!window.Turing) {
+    alert('请先安装Turing钱包')
+    return
+  }
+  try {
+    await window.Turing.connect()
+    const { tbcAddress } = await window.Turing.getAddress()
+    localStorage.setItem(STORAGE_KEY, tbcAddress)
+    curAddress.value = tbcAddress
+    console.log('curAddress', curAddress.value)
+    getBalance()
+    // alert(`钱包地址已获取: ${tbcAddress}`)
+  } catch (error) {
+    console.error('获取钱包地址失败:', error)
+    // alert('获取钱包地址失败，请重试')
+  }
+}
+
+// 获取钱包余额
+const getBalance = async () => {
+  try {
+    await window.Turing.getBalance()
+    const { tbc } = await window.Turing.getBalance()
+    curBalance.value = tbc
+    console.log('curBalance', curBalance.value)
+  } catch (error) {
+    console.error('获取钱包余额失败:', error)
+  }
+}
+// 提交冻结资产
 const handleDeposit = () => {
-  if (!depositAmount.value || depositAmount.value <= 0) {
-    alert('请输入有效的金额')
+  // 表单校验
+  if (!depositAmount.value || depositAmount.value <= 0 || !lockTime.value || lockTime.value <= 0) {
+    alert('请输入有效的冻结金额和冻结时间')
+    return
+  }
+  if (depositAmount.value > curBalance.value) {
+    alert('冻结金额不能大于钱包余额')
     return
   }
 
@@ -134,7 +234,7 @@ const handleDeposit = () => {
   }
 
   // 更新当前金额
-  currentAmount.value += depositAmount.value
+  // currentAmount.value += depositAmount.value
 
   // 保存存款记录到本地存储
   const existingRecords = JSON.parse(localStorage.getItem('piggyBank_depositRecords') || '[]')
@@ -142,7 +242,7 @@ const handleDeposit = () => {
   localStorage.setItem('piggyBank_depositRecords', JSON.stringify(existingRecords))
 
   // 保存到本地存储
-  saveToLocalStorage()
+  // saveToLocalStorage()
 
   // 显示成功消息
   alert(`成功存入 ¥${depositAmount.value.toFixed(2)}`)
@@ -152,33 +252,32 @@ const handleDeposit = () => {
   depositNote.value = ''
 }
 
-const handleSetTarget = () => {
-  if (!newTargetAmount.value || newTargetAmount.value <= 0) {
-    alert('请输入有效的目标金额')
-    return
-  }
+// const handleSetTarget = () => {
+//   if (!newTargetAmount.value || newTargetAmount.value <= 0) {
+//     alert('请输入有效的目标金额')
+//     return
+//   }
 
-  targetAmount.value = newTargetAmount.value
-  saveToLocalStorage()
-  alert(`目标金额设置为 ¥${newTargetAmount.value.toFixed(2)}`)
-  newTargetAmount.value = null
-}
+//   targetAmount.value = newTargetAmount.value
+//   saveToLocalStorage()
+//   alert(`目标金额设置为 ¥${newTargetAmount.value.toFixed(2)}`)
+//   newTargetAmount.value = null
+// }
 
-const saveToLocalStorage = () => {
-  localStorage.setItem('piggyBank_currentAmount', currentAmount.value.toString())
-  localStorage.setItem('piggyBank_targetAmount', targetAmount.value.toString())
-}
+// const saveToLocalStorage = () => {
+//   localStorage.setItem('piggyBank_currentAmount', currentAmount.value.toString())
+//   localStorage.setItem('piggyBank_targetAmount', targetAmount.value.toString())
+// }
 
 const loadFromLocalStorage = () => {
-  const savedCurrent = localStorage.getItem('piggyBank_currentAmount')
-  const savedTarget = localStorage.getItem('piggyBank_targetAmount')
-  
-  if (savedCurrent) {
-    currentAmount.value = parseFloat(savedCurrent)
-  }
-  if (savedTarget) {
-    targetAmount.value = parseFloat(savedTarget)
-  }
+  // const savedCurrent = localStorage.getItem('piggyBank_currentAmount')
+  // const savedTarget = localStorage.getItem('piggyBank_targetAmount')
+  // if (savedCurrent) {
+  //   currentAmount.value = parseFloat(savedCurrent)
+  // }
+  // if (savedTarget) {
+  //   targetAmount.value = parseFloat(savedTarget)
+  // }
 }
 
 onMounted(() => {
@@ -192,7 +291,7 @@ onMounted(() => {
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* background: linear-gradient(135deg, #e7af85 0%, #f77a1c 100%); */
 }
 
 .header {
@@ -204,14 +303,14 @@ onMounted(() => {
 }
 
 .title {
-  color: white;
+  color: #3d3c63;
   font-size: 24px;
   font-weight: bold;
 }
 
 .query-btn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: #d5e7fc;
+  color: #3d3c63;
   padding: 10px 15px;
   border-radius: 20px;
   text-decoration: none;
@@ -220,70 +319,21 @@ onMounted(() => {
 }
 
 .query-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #a2d0fa;
   transform: translateY(-2px);
+}
+
+.piggy-bank-img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 1.25rem;
+  max-height: 20rem;
 }
 
 .piggy-bank-section {
   text-align: center;
   margin-bottom: 30px;
-}
-
-.piggy-bank {
-  position: relative;
-  width: 200px;
-  height: 200px;
-  margin: 0 auto 20px;
-  background: linear-gradient(45deg, #ffd700, #ffed4e);
-  border-radius: 50%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  animation: bounce 2s infinite;
-}
-
-.piggy-bank-body {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.piggy-bank-face {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.eyes {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 10px;
-}
-
-.eye {
-  width: 12px;
-  height: 12px;
-  background: #333;
-  border-radius: 50%;
-  animation: blink 3s infinite;
-}
-
-.nose {
-  width: 8px;
-  height: 6px;
-  background: #ff6b6b;
-  border-radius: 50%;
-  margin: 0 auto 5px;
-}
-
-.mouth {
-  width: 20px;
-  height: 10px;
-  border: 2px solid #333;
-  border-top: none;
-  border-radius: 0 0 20px 20px;
-  margin: 0 auto;
 }
 
 .coin-slot {
@@ -362,18 +412,19 @@ onMounted(() => {
 }
 
 .deposit-section h2, .target-section h2 {
-  color: white;
+  color: #3d3c63;
   margin-bottom: 15px;
   font-size: 18px;
 }
 
 .form-group {
   margin-bottom: 15px;
+  margin-top: 10px;
 }
 
 .form-group label {
   display: block;
-  color: rgba(255, 255, 255, 0.8);
+  color: #3d3c63;
   margin-bottom: 5px;
   font-size: 14px;
 }
@@ -400,7 +451,7 @@ onMounted(() => {
 }
 
 .deposit-btn {
-  background: linear-gradient(45deg, #ffd700, #ffed4e);
+  background: #fbd45c;
   color: #333;
 }
 
@@ -424,24 +475,65 @@ onMounted(() => {
   box-shadow: 0 5px 15px rgba(167, 139, 250, 0.4);
 }
 
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-10px);
-  }
-  60% {
-    transform: translateY(-5px);
-  }
+input, select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
 
-@keyframes blink {
-  0%, 90%, 100% {
-    transform: scaleY(1);
-  }
-  95% {
-    transform: scaleY(0.1);
-  }
+.time-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.time-input-group input {
+  flex: 1;
+}
+
+.time-unit {
+  width: auto;
+  padding: 8px 12px;
+}
+
+/* 错误提示样式 */
+.error-message {
+  color: #ff4d4f;
+  font-size: 0.875rem;
+  margin-top: 4px;
+  display: block;
+}
+
+.error-input {
+  border: 1px solid #ff4d4f !important;
+}
+/* 错误提示动画 */
+.error-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+.error-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.error-fade-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.error-fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.error-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.error-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
 }
 </style>
