@@ -29,6 +29,13 @@
             disabled
           />
         </div>
+        <div class="form-group">
+          <label>当前区块高度</label>
+          <input
+            v-model="curBlockHeight"
+            disabled
+          />
+        </div>
       </template>
       <!-- 冻结资产表单 -->
       <h2 class="deposit-title">冻结资产</h2>
@@ -63,7 +70,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router'
 import TimePicker from './TimePicker.vue'
 import { API } from 'tbc-contract'
 
@@ -97,6 +104,7 @@ const lockTime = ref<number | null>(null) // 冻结时间（数值）
 const selectedUnit = ref('') // 选中的时间单位
 const curBalance = ref(100) // 钱包余额
 const curAddress = ref('') // 钱包地址
+const curBlockHeight = ref(0) // 区块高度
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
 const errors = reactive<Errors>({ // 错误提示
   amountTip: '',
@@ -145,6 +153,7 @@ const getAddress = async () => {
     localStorage.setItem(STORAGE_KEY, tbcAddress)
     curAddress.value = tbcAddress
     getBalance()
+    getBlockHeight()
   } catch (error) {
     console.error('获取钱包地址失败:', error)
     alert('获取钱包地址失败，请重试')
@@ -162,6 +171,16 @@ const getBalance = async () => {
   }
 }
 
+// 获取当前区块高度
+const getBlockHeight = async () => {
+  try {
+    const res = await API.fetchBlockHeaders('testnet')
+    curBlockHeight.value = res[0]?.height || 0
+  } catch (error) {
+    console.error('获取当前区块高度失败:', error)
+    alert('获取当前区块高度失败，请重试')
+  }
+}
 // 提交冻结资产
 const handleDeposit = () => {
   if (!validateAmount()) return
@@ -183,11 +202,11 @@ const handleDeposit = () => {
   localStorage.setItem('piggyBank_depositRecords', JSON.stringify(existingRecords))
 
   // 提示成功并重置表单
-  alert(`
-    冻结成功！
-    金额：${depositAmount.value.toFixed(6)} TBC
-    时间：${lockTime.value}${selectedUnit.value}
-  `)
+  // alert(`
+  //   冻结成功！
+  //   金额：${depositAmount.value.toFixed(6)} TBC
+  //   时间：${lockTime.value}${selectedUnit.value}
+  // `)
   depositAmount.value = null
   depositNote.value = ''
   lockTime.value = null
