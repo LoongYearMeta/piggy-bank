@@ -15,7 +15,7 @@
       <button v-if="!curAddress" @click="getAddress">点击获取地址</button>
       <p v-else>当前钱包地址: {{ curAddress }}</p>
       <p>钱包余额: {{ curBalance.toFixed(6) }} TBC</p>
-      
+      <p>当前区块高度: {{ 100 }}</p>
       <!-- 冻结资产表单 -->
       <form @submit.prevent="handleDeposit" class="deposit-form">
         <!-- 冻结金额 -->
@@ -26,57 +26,34 @@
             id="amount"
             v-model.number="depositAmount"
             placeholder="请输入冻结金额"
-            required
+
             @input="validateAmount"
           />
           <Transition name="error-fade">
             <span class="error-message" v-if="errors.amountTip">{{ errors.amountTip }}</span>
           </Transition>
         </div>
-
-        <!-- 冻结时间（带动画的自定义下拉组件） -->
+        <!-- 冻结时间-时间选择器 -->
+        <!-- <div class="form-group">
+          <label for="blockNumber">冻结时间</label>
+          <input
+            type="datetime-local"
+            id="lockTime"
+            v-model="lockTime"
+            placeholder="请选择冻结时间"
+            required  s
+          />
+          <p>区块数换算: 1 区块 = 10 min</p>
+        </div> -->
         <div class="form-group">
-          <label for="lockTime">冻结时间</label>
-          <div class="time-input-group">
-            <input
-              id="lockTime"
-              v-model.number="lockTime"
-              step="1"
-              min="1"
-              placeholder="请输入冻结时间"
-              required
-              @input="validateTime"
-              :class="errors.timeTip ? 'error-input' : ''"
-            />
-            <!-- 自定义下拉组件（含动画） -->
-            <div class="custom-select" @click="toggleSelect">
-              <div class="select-value">
-                <span>{{ selectedUnit || '请选择单位' }}</span>
-                <div class="select-icon" :class="{ 'rotate': isOpen }">▼</div>
-              </div>
-              <!-- 下拉选项动画容器 -->
-              <Transition name="select-fade">
-                <div class="select-options" v-show="isOpen">
-                  <div 
-                    v-for="(item, index) in units" 
-                    :key="item" 
-                    @click="selectUnit(item)"
-                    class="option-item"
-                    :style="{ '--delay': `${index * 0.05}s` }"
-                  >
-                    {{ item }}
-                  </div>
-                </div>
-              </Transition>
-            </div>
-          </div>
-          <Transition name="error-fade">
-            <span class="error-message" v-if="errors.timeTip">{{ errors.timeTip }}</span>
-          </Transition>
+          <!-- 自定义时间选择器 -->
+          <TimePicker ref="timePicker" />
+          <!-- <button @click="handleSubmit">submit</button> -->
+          <!-- <p>区块数换算: 1 区块 = 10 min</p> -->
         </div>
 
         <!-- 备注 -->
-        <div class="form-group">
+        <!-- <div class="form-group">
           <label for="note">备注 (选填)</label>
           <input
             type="text"
@@ -84,9 +61,9 @@
             v-model="depositNote"
             placeholder="备注信息"
           />
-        </div>
+        </div> -->
 
-        <button type="submit" class="deposit-btn" :disabled="!depositAmount || depositAmount <= 0 || !selectedUnit">
+        <button type="submit" class="deposit-btn" :disabled="!depositAmount || depositAmount <= 0">
           冻结
         </button>
       </form>
@@ -97,6 +74,8 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import TimePicker from './TimePicker.vue'
+import { API } from 'tbc-contract'
 
 // 全局变量声明：Turing钱包接口
 declare global {
@@ -119,6 +98,7 @@ interface Errors {
 }
 
 const router = useRouter()
+const timePickerRef = ref()
 
 // 响应式数据
 const depositAmount = ref<number | null>(null) // 冻结金额
@@ -127,7 +107,7 @@ const lockTime = ref<number | null>(null) // 冻结时间（数值）
 const selectedUnit = ref('') // 选中的时间单位
 const isOpen = ref(false) // 下拉框展开状态
 const units = ref(['日', '周', '月', '年', '区块']) // 时间单位列表
-const curBalance = ref(0) // 钱包余额
+const curBalance = ref(100) // 钱包余额
 const curAddress = ref('') // 钱包地址
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
 const errors = reactive<Errors>({ // 错误提示
@@ -166,30 +146,38 @@ const validateAmount = (): boolean => {
 }
 
 // 冻结时间校验
-const validateTime = (): boolean => {
-  errors.timeTip = ''
-  if (!lockTime.value || lockTime.value <= 0) {
-    errors.timeTip = '请输入有效的冻结时间'
-    return false
-  }
-  if (!selectedUnit.value) {
-    errors.timeTip = '请选择冻结时间单位'
-    return false
-  }
-  return true
-}
+// const validateTime = (): boolean => {
+//   errors.timeTip = ''
+//   if (!lockTime.value || lockTime.value <= 0) {
+//     errors.timeTip = '请输入有效的冻结时间'
+//     return false
+//   }
+//   if (!selectedUnit.value) {
+//     errors.timeTip = '请选择冻结时间单位'
+//     return false
+//   }
+//   return true
+// }
 
-// 切换下拉框展开/收起
-const toggleSelect = () => {
-  isOpen.value = !isOpen.value
+// 提交时间选择器-校验
+const handleSubmit = () => {
+  // 调用子组件的校验方法
+  if (timePickerRef.value.validateDate()) {
+    // 获取格式化的时间
+    console.log('选中的时间：', timePickerRef.value.fullTime)
+  }
 }
+// // 切换下拉框展开/收起
+// const toggleSelect = () => {
+//   isOpen.value = !isOpen.value
+// }
 
-// 选择时间单位
-const selectUnit = (unit: string) => {
-  selectedUnit.value = unit
-  isOpen.value = false // 选择后自动收起
-  validateTime() // 触发校验
-}
+// // 选择时间单位
+// const selectUnit = (unit: string) => {
+//   selectedUnit.value = unit
+//   isOpen.value = false // 选择后自动收起
+//   validateTime() // 触发校验
+// }
 
 // 获取钱包地址
 const getAddress = async () => {
@@ -212,8 +200,10 @@ const getAddress = async () => {
 // 获取钱包余额
 const getBalance = async () => {
   try {
-    const { tbc } = await window.Turing.getBalance()
-    curBalance.value = tbc
+    console.log('test')
+    const tbc = await API.getTBCbalance(curAddress.value, 'testnet')
+    curBalance.value = tbc / 100000
+    console.log(curBalance.value)
   } catch (error) {
     console.error('获取钱包余额失败:', error)
     alert('获取钱包余额失败，请重试')
@@ -222,7 +212,7 @@ const getBalance = async () => {
 
 // 提交冻结资产
 const handleDeposit = () => {
-  if (!validateAmount() || !validateTime()) return
+  if (!validateAmount()) return
 
   // 构造冻结记录
   const depositRecord = {
@@ -267,7 +257,7 @@ onMounted(() => {
 .home-container {
   max-width: 100vw;
   margin: 0 auto;
-  min-height: 100vh;
+  /* min-height: 100vh; */
   box-sizing: border-box;
 }
 

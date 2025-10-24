@@ -22,10 +22,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(270deg, #eef5ff 0%,#f1eef9 100%);
-  min-height: 100vh;
+  /* min-height: 100vh; */
 }
 
 #app {
-  min-height: 100vh;
+  min-height: calc(100vh - 2rem);
 }
 </style>
