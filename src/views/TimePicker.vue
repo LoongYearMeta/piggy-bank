@@ -167,14 +167,14 @@
       <span class="error-message" v-if="timeError">{{ timeError }}</span>
     </Transition>
     <!-- 区块换算说明 -->
-    <div class="block-convert-container">
+    <!-- <div class="block-convert-container">
       <p class="block-convert">区块数换算: 1 区块 = 10 min</p>
       <Transition name="block-fade">
         <p class="block-result" v-if="showBlockCalculation">
           预计区块高度为：{{ calculatedBlockHeight }}
         </p>
       </Transition>
-    </div>
+    </div> -->
   </div>
 </template>
 

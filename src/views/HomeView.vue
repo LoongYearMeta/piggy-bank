@@ -7,16 +7,31 @@
         解冻资产
       </router-link>
     </header>
+    <!-- logo图片 -->
     <img src="../assets/piggy-bank.svg" alt="piggy-bank" class="piggy-bank-img">
-
-    <!-- 冻结资产表单 -->
+    <!-- 钱包信息区域 -->
     <div class="deposit-section">
-      <!-- 获取钱包地址 -->
-      <button v-if="!curAddress" @click="getAddress">点击获取地址</button>
-      <p v-else>当前钱包地址: {{ curAddress }}</p>
-      <p>钱包余额: {{ curBalance.toFixed(6) }} TBC</p>
-      <p>当前区块高度: {{ 100 }}</p>
+      <!-- 获取钱包地址、余额、区块高度 -->
+      <button @click="getAddress">点击获取地址</button>
+      <!-- 当前钱包地址 -->
+      <template v-if="curAddress">
+        <div class="form-group">
+          <label>当前钱包地址</label>
+          <input
+            v-model="curAddress"
+            disabled
+          />
+        </div>
+        <div class="form-group">
+          <label>当前钱包余额</label>
+          <input
+            v-model="curBalance"
+            disabled
+          />
+        </div>
+      </template>
       <!-- 冻结资产表单 -->
+      <h2 class="deposit-title">冻结资产</h2>
       <form @submit.prevent="handleDeposit" class="deposit-form">
         <!-- 冻结金额 -->
         <div class="form-group">
@@ -33,35 +48,10 @@
             <span class="error-message" v-if="errors.amountTip">{{ errors.amountTip }}</span>
           </Transition>
         </div>
-        <!-- 冻结时间-时间选择器 -->
-        <!-- <div class="form-group">
-          <label for="blockNumber">冻结时间</label>
-          <input
-            type="datetime-local"
-            id="lockTime"
-            v-model="lockTime"
-            placeholder="请选择冻结时间"
-            required  s
-          />
-          <p>区块数换算: 1 区块 = 10 min</p>
-        </div> -->
         <div class="form-group">
           <!-- 自定义时间选择器 -->
           <TimePicker ref="timePicker" />
-          <!-- <button @click="handleSubmit">submit</button> -->
-          <!-- <p>区块数换算: 1 区块 = 10 min</p> -->
         </div>
-
-        <!-- 备注 -->
-        <!-- <div class="form-group">
-          <label for="note">备注 (选填)</label>
-          <input
-            type="text"
-            id="note"
-            v-model="depositNote"
-            placeholder="备注信息"
-          />
-        </div> -->
 
         <button type="submit" class="deposit-btn" :disabled="!depositAmount || depositAmount <= 0">
           冻结
@@ -97,16 +87,14 @@ interface Errors {
   timeTip: string
 }
 
-const router = useRouter()
-const timePickerRef = ref()
+// const router = useRouter()
+// const timePickerRef = ref()
 
 // 响应式数据
 const depositAmount = ref<number | null>(null) // 冻结金额
 const depositNote = ref('') // 备注
 const lockTime = ref<number | null>(null) // 冻结时间（数值）
 const selectedUnit = ref('') // 选中的时间单位
-const isOpen = ref(false) // 下拉框展开状态
-const units = ref(['日', '周', '月', '年', '区块']) // 时间单位列表
 const curBalance = ref(100) // 钱包余额
 const curAddress = ref('') // 钱包地址
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
@@ -145,40 +133,6 @@ const validateAmount = (): boolean => {
   return true
 }
 
-// 冻结时间校验
-// const validateTime = (): boolean => {
-//   errors.timeTip = ''
-//   if (!lockTime.value || lockTime.value <= 0) {
-//     errors.timeTip = '请输入有效的冻结时间'
-//     return false
-//   }
-//   if (!selectedUnit.value) {
-//     errors.timeTip = '请选择冻结时间单位'
-//     return false
-//   }
-//   return true
-// }
-
-// 提交时间选择器-校验
-const handleSubmit = () => {
-  // 调用子组件的校验方法
-  if (timePickerRef.value.validateDate()) {
-    // 获取格式化的时间
-    console.log('选中的时间：', timePickerRef.value.fullTime)
-  }
-}
-// // 切换下拉框展开/收起
-// const toggleSelect = () => {
-//   isOpen.value = !isOpen.value
-// }
-
-// // 选择时间单位
-// const selectUnit = (unit: string) => {
-//   selectedUnit.value = unit
-//   isOpen.value = false // 选择后自动收起
-//   validateTime() // 触发校验
-// }
-
 // 获取钱包地址
 const getAddress = async () => {
   if (!window.Turing) {
@@ -200,10 +154,8 @@ const getAddress = async () => {
 // 获取钱包余额
 const getBalance = async () => {
   try {
-    console.log('test')
     const tbc = await API.getTBCbalance(curAddress.value, 'testnet')
-    curBalance.value = tbc / 100000
-    console.log(curBalance.value)
+    curBalance.value = tbc / 1000000
   } catch (error) {
     console.error('获取钱包余额失败:', error)
     alert('获取钱包余额失败，请重试')
