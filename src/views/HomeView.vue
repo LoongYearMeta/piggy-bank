@@ -12,7 +12,7 @@
     <!-- 钱包信息区域 -->
     <div class="deposit-section">
       <!-- 获取钱包地址、余额、区块高度 -->
-      <button @click="getAddress">点击获取地址</button>
+      <!-- <button @click="getAddress">点击获取地址</button> -->
       <!-- 当前钱包地址 -->
       <template v-if="curAddress">
         <div class="form-group">
@@ -25,7 +25,7 @@
         <div class="form-group">
           <label>当前钱包余额</label>
           <input
-            v-model="curBalance"
+            v-model="tbcBalance"
             disabled
           />
         </div>
@@ -46,7 +46,7 @@
           <input
             :class="errors.amountTip ? 'error-input' : ''"
             id="amount"
-            v-model.number="depositAmount"
+            v-model.number="formData.depositAmount"
             placeholder="请输入冻结金额"
             @input="validateAmount"
           />
@@ -58,7 +58,7 @@
           <!-- 自定义时间选择器 -->
           <TimePicker ref="timePicker" />
         </div>
-        <button type="submit" class="deposit-btn" :disabled="!depositAmount || depositAmount <= 0">
+        <button type="submit" class="deposit-btn" :disabled="!formData.depositAmount || formData.depositAmount <= 0">
           冻结
         </button>
       </form>
@@ -71,6 +71,8 @@ import { ref, reactive, watch, onMounted } from 'vue'
 // import { useRouter } from 'vue-router'
 import TimePicker from './TimePicker.vue'
 import { API } from 'tbc-contract'
+import * as tbc from 'tbc-lib-js'
+import { Regex } from '../utils/reg'
 
 // 全局变量声明：Turing钱包接口
 declare global {
@@ -96,47 +98,65 @@ interface Errors {
 // const timePickerRef = ref()
 
 // 响应式数据
-const depositAmount = ref<number | null>(null) // 冻结金额
-const depositNote = ref('') // 备注
-const lockTime = ref<number | null>(null) // 冻结时间（数值）
-const selectedUnit = ref('') // 选中的时间单位
-const curBalance = ref(100) // 钱包余额
+const network = import.meta.env.VITE_NETWORK || undefined // 网络环境
+// 表单数据-冻结
+const formData = reactive({
+  depositAmount: 0, // 冻结金额
+  lockTime: null, // 冻结时间（换算为区块高度）
+})
+// 表单数据-钱包
+const tbcBalance = ref(0) // 钱包余额 tbc-余额
 const curAddress = ref('') // 钱包地址
-const curBlockHeight = ref(0) // 区块高度
+const curBlockHeight = ref(0) // 当前区块高度
+// 其他数据-本地存储
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
 const errors = reactive<Errors>({ // 错误提示
   amountTip: '',
   timeTip: ''
 })
 
-// 监听金额变化，实时校验
-watch(depositAmount, () => {
-  validateAmount()
+// 页面挂载时获取数据
+onMounted(() => {
+  // 钱包数据初始化
+  getWalletData()
 })
+
+// 监听金额变化，实时校验
+watch(
+  () => formData.depositAmount, // 监听formData中的depositAmount属性
+  () => {
+    validateAmount()
+  }
+)
 
 // 冻结金额校验
 const validateAmount = (): boolean => {
   errors.amountTip = ''
-  if (!depositAmount.value) {
+  const depositAmount = formData.depositAmount
+  // 非空校验
+  if (!depositAmount) {
     errors.amountTip = '请输入冻结金额'
     return false
   }
-  if (depositAmount.value <= 0) {
-    errors.amountTip = '冻结金额不能为负数'
+  // 正则校验
+  const amountStr = depositAmount.toString()
+  if (!Regex.freezeAmountReg.test(amountStr)) {
+    errors.amountTip = '请输入正小数且最多精确到小数点后6位'
     return false
   }
-  // 精度校验（最多6位小数）
-  const amountStr = depositAmount.value.toString()
-  const decimalIndex = amountStr.indexOf('.')
-  if (decimalIndex !== -1 && amountStr.slice(decimalIndex + 1).length > 6) {
-    errors.amountTip = '金额最多精确到小数点后6位'
-    return false
-  }
-  if (depositAmount.value > curBalance.value) {
+  // 金额校验
+  if (depositAmount > tbcBalance.value) {
     errors.amountTip = '冻结金额不能大于钱包余额'
     return false
   }
   return true
+}
+
+// 获取钱包数据
+const getWalletData = async () => {
+  await getAddress()
+  await getBalance()
+  await getBlockHeight()
 }
 
 // 获取钱包地址
@@ -150,77 +170,112 @@ const getAddress = async () => {
     const { tbcAddress } = await window.Turing.getAddress()
     localStorage.setItem(STORAGE_KEY, tbcAddress)
     curAddress.value = tbcAddress
-    getBalance()
-    getBlockHeight()
   } catch (error) {
     console.error('获取钱包地址失败:', error)
-    alert('获取钱包地址失败，请重试')
   }
 }
 
 // 获取钱包余额
 const getBalance = async () => {
   try {
-    const network = import.meta.env.VITE_NETWORK || undefined
     const tbc = await API.getTBCbalance(curAddress.value, network)
-    curBalance.value = tbc / 1000000
+    tbcBalance.value = tbc / 1000000
   } catch (error) {
     console.error('获取钱包余额失败:', error)
-    alert('获取钱包余额失败，请重试')
   }
 }
 
 // 获取当前区块高度
 const getBlockHeight = async () => {
   try {
-    const network = import.meta.env.VITE_NETWORK || undefined
     const res = await API.fetchBlockHeaders(network)
     curBlockHeight.value = res[0]?.height || 0
   } catch (error) {
     console.error('获取当前区块高度失败:', error)
-    alert('获取当前区块高度失败，请重试')
   }
 }
+
+// 构造冻结资产交易数据
+// const freezeTBC = async () => {
+//   const tbcAmount = formData.depositAmount
+//   const lockTime = 280760
+//   const address = '1Hiw63nWTTgAkjRU5SQyz6ASGKQuyHYaQP'
+//   try {
+//     // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
+//     const utxos = await API.getUTXOs(address, tbcAmount + 0.1, network)
+//     console.log('utxos:', utxos)
+//     // 如果需要单个 UTXO，取第一个
+//     if (utxos.length > 0) {
+//       const utxo = utxos[0]
+//       console.log('Selected utxo:', utxo)
+//     }
+//   } catch (error) {
+//     console.error('获取 UTXO 失败:', error)
+//   }
+// }
+// freezeTBC()
+
 // 提交冻结资产
-const handleDeposit = () => {
-  if (!validateAmount()) return
+// const handleDeposit = () => {
+//   if (!validateAmount()) return
 
-  // 构造冻结记录
-  const depositRecord = {
-    id: Date.now().toString(),
-    amount: depositAmount.value,
-    note: depositNote.value,
-    lockTime: lockTime.value,
-    lockUnit: selectedUnit.value,
-    date: new Date().toISOString(),
-    address: curAddress.value
-  }
+//   // 构造冻结记录
+//   const depositRecord = {
+//     id: Date.now().toString(),
+//     amount: depositAmount.value,
+//     note: depositNote.value,
+//     lockTime: lockTime.value,
+//     lockUnit: selectedUnit.value,
+//     date: new Date().toISOString(),
+//     address: curAddress.value
+//   }
 
-  // 保存到本地存储
-  const existingRecords = JSON.parse(localStorage.getItem('piggyBank_depositRecords') || '[]')
-  existingRecords.push(depositRecord)
-  localStorage.setItem('piggyBank_depositRecords', JSON.stringify(existingRecords))
+//   // 保存到本地存储
+//   const existingRecords = JSON.parse(localStorage.getItem('piggyBank_depositRecords') || '[]')
+//   existingRecords.push(depositRecord)
+//   localStorage.setItem('piggyBank_depositRecords', JSON.stringify(existingRecords))
 
-  // 提示成功并重置表单
-  // alert(`
-  //   冻结成功！
-  //   金额：${depositAmount.value.toFixed(6)} TBC
-  //   时间：${lockTime.value}${selectedUnit.value}
-  // `)
-  depositAmount.value = null
-  depositNote.value = ''
-  lockTime.value = null
-  selectedUnit.value = ''
-}
+//   // 提示成功并重置表单
+//   // alert(`
+//   //   冻结成功！
+//   //   金额：${depositAmount.value.toFixed(6)} TBC
+//   //   时间：${lockTime.value}${selectedUnit.value}
+//   // `)
+//   depositAmount.value = null
+//   depositNote.value = ''
+//   lockTime.value = null
+//   selectedUnit.value = ''
+// }
 
-// 页面挂载时加载数据
-const loadFromLocalStorage = () => {
-  // 可添加表单状态恢复逻辑
-}
+// 签名交易并广播
+// const signTransaction = async () => {
+//   // 初始化
+//   const utxos: tbc.Transaction.IUnspentOutput[] = [] // 存储未花费交易输出
+//   const utxos_satoshis: number[][] = [[],[]] // 存储未花费交易输出的金额
+//   const script_pubkeys: string[][] = [[],[]] // 存储未花费交易输出的脚本公钥
+//   const txraws: string[] = []
+//   const txs: tbc.Transaction[] = [] // 存储签名后的交易
 
-onMounted(() => {
-  loadFromLocalStorage()
-})
+//   // 构建基础交易-未签名
+//   const tx = new tbc.Transaction()
+//     .from(utxos)
+//     .to('1Hiw63nWTTgAkjRU5SQyz6ASGKQuyHYaQP', 0.1)
+//     .change('1Hiw63nWTTgAkjRU5SQyz6ASGKQuyHYaQP')
+//     .fee(80)
+//     // .to(Address, amount)
+//     // .change(address)
+//     // .fee(80)
+//   txraws.push(tx.uncheckedSerialize()) // 未签名交易
+
+//   // 收集签名所需的UTXO信息 聪的数量和锁定脚本
+//   // for (let i = 0; i < utxos.length; i++) {
+//   //   utxos_satoshis[0].push(utxos[i].satoshis)
+//   //   script_pubkeys[0].push(utxos[i].script)
+//   // }
+// }
+// signTransaction()
+
+
 </script>
 
 <style scoped>
