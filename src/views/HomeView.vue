@@ -48,7 +48,6 @@
             id="amount"
             v-model.number="depositAmount"
             placeholder="请输入冻结金额"
-
             @input="validateAmount"
           />
           <Transition name="error-fade">
@@ -59,7 +58,6 @@
           <!-- 自定义时间选择器 -->
           <TimePicker ref="timePicker" />
         </div>
-
         <button type="submit" class="deposit-btn" :disabled="!depositAmount || depositAmount <= 0">
           冻结
         </button>
@@ -88,7 +86,7 @@ declare global {
   }
 }
 
-// 类型定义
+// 类型定义-错误提示信息
 interface Errors {
   amountTip: string
   timeTip: string
@@ -163,7 +161,8 @@ const getAddress = async () => {
 // 获取钱包余额
 const getBalance = async () => {
   try {
-    const tbc = await API.getTBCbalance(curAddress.value, 'testnet')
+    const network = import.meta.env.VITE_NETWORK || undefined
+    const tbc = await API.getTBCbalance(curAddress.value, network)
     curBalance.value = tbc / 1000000
   } catch (error) {
     console.error('获取钱包余额失败:', error)
@@ -174,7 +173,8 @@ const getBalance = async () => {
 // 获取当前区块高度
 const getBlockHeight = async () => {
   try {
-    const res = await API.fetchBlockHeaders('testnet')
+    const network = import.meta.env.VITE_NETWORK || undefined
+    const res = await API.fetchBlockHeaders(network)
     curBlockHeight.value = res[0]?.height || 0
   } catch (error) {
     console.error('获取当前区块高度失败:', error)
