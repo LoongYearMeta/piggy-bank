@@ -74,8 +74,9 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
 import TimePicker from './TimePicker.vue'
-import { API } from 'tbc-contract'
+import { API, piggyBank } from 'tbc-contract'
 import { Regex } from '../utils/reg'
+import * as tbc from "tbc-lib-js";
 
 // 全局变量声明：Turing钱包接口
 declare global {
@@ -87,6 +88,7 @@ declare global {
       getPubKey(): Promise<{ tbcPubKey: string }>
       getAddress(): Promise<{ tbcAddress: string }>
       getBalance(): Promise<{ tbc: number }>
+      signTransaction({txraws, utxos_satoshis, script_pubkeys}: {txraws: string[], utxos_satoshis: number[][], script_pubkeys: string[][]}): Promise<{ sigs: string[] }>
     }
   }
 }
@@ -110,6 +112,7 @@ const curAddress = ref('') // 钱包地址
 const curBlockHeight = ref(0) // 当前区块高度
 // 其他数据-本地存储
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
+
 const errors = reactive<Errors>({ // 错误提示
   amountTip: '',
   timeTip: ''
@@ -201,23 +204,53 @@ const getBlockHeight = async () => {
   }
 }
 
-// 构造冻结资产交易数据
+// 构造冻结资产交易
 const freezeTBC = async () => {
   const tbcAmount = formData.depositAmount
   const lockTime = formData.lockTime
-  console.log('冻结金额:', tbcAmount, '锁定区块高度:', lockTime)
-  
-  try {
+  // try {
+    // 参数校验
+    if (!curAddress.value) throw new Error("钱包地址未获取");
+    if (!lockTime || lockTime <= curBlockHeight.value) throw new Error("锁定区块高度无效（需大于当前区块）");
+    if (!tbcAmount || tbcAmount <= 0) throw new Error("冻结金额无效");
+    // 参数准备-UTXO的金额和锁定脚本
+    const { tbcPubKey } = await window.Turing.getPubKey();
+    const publicKey = new tbc.PublicKey(tbcPubKey);
+    const utxos_satoshis: number[][] = [[], []] // 二维数组：[[第一个交易的UTXO金额]]
+    const script_pubkeys: string[][] = [[], []] // 二维数组：[[第一个交易的UTXO锁定脚本]]
+    const txraws: string[] = [] // 未签名交易
     // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
     const utxos = await API.getUTXOs(curAddress.value, tbcAmount + 0.1, network)
-    // 如果需要单个 UTXO，取第一个
-    if (utxos.length > 0) {
-      const utxo = utxos[0]
-      console.log('Selected utxo:', utxo)
+    if (!utxos || utxos.length === 0) throw new Error("无可用UTXO支付手续费");
+    // const utxo = utxos[0]
+    console.log('utxo:', utxos)
+    // 未签名交易
+    const freezeTx = piggyBank.freezeTBC(curAddress.value, tbcAmount, lockTime, utxos)
+    const tx = new tbc.Transaction(freezeTx)
+    // 交易签名
+    txraws.push(tx.uncheckedSerialize()) // 序列化未签名交易
+    for(let i=0; i < utxos.length; i++) {
+      utxos_satoshis[0]!.push(utxos[i]!.satoshis)
+      script_pubkeys[0]!.push(utxos[i]!.script)
     }
-  } catch (error) {
-    console.error('获取 UTXO 失败:', error)
-  }
+    // 对交易进行签名
+    const { sigs } = await window.Turing.signTransaction({
+      txraws,
+      utxos_satoshis,
+      script_pubkeys
+    })
+    if (!sigs || sigs.length === 0) throw new Error("交易签名失败");
+    // 将签名添加到交易中，设置UTXO的解锁脚本
+    for(let i = 0; i < utxos.length; i++) {
+      tx.setInputScript({ inputIndex: i }, () => {
+        const sig = sigs[i]![0]!
+        const sig_length = (sig.length / 2).toString(16);
+        const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16);
+        return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString());
+      })
+    }
+    API.broadcastTXraw(tx.uncheckedSerialize(), network)
+  // } 
 }
 
 // 提交冻结资产
