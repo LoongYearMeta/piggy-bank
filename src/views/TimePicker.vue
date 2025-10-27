@@ -170,7 +170,7 @@
     <div class="block-convert-container">
       <p class="block-convert">区块数换算: 1 区块 = 10 min</p>
       <Transition name="block-fade">
-        <p class="block-result" v-if="showBlockCalculation">
+        <p class="block-result" v-if="showBlockCalculation" @change="handleLockTimeChange">
           预计区块高度为：{{ calculatedBlockHeight }}
         </p>
       </Transition>
@@ -179,7 +179,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, defineProps, defineEmits } from 'vue'
+
+// 定义props
+const props = defineProps<{
+  currentBlockHeight: number
+}>()
+
+// 定义emit
+const emit = defineEmits<{
+  (e: 'update:lockTime', value: number): void
+}>()
+
+const handleLockTimeChange = () => {
+  emit('update:lockTime', calculatedBlockHeight.value) // 发送当前lockTime给父组件
+}
 
 // 基础数据
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
@@ -190,7 +204,7 @@ const timeError = ref('')
 const activeTab = ref('date')
 
 // 区块换算相关
-const currentBlockHeight = ref(100000) // 当前区块高度，默认为100
+const currentBlockHeight = ref(props.currentBlockHeight) // 当前区块高度，默认为100
 const calculatedBlockHeight = ref(0) // 计算后的区块高度
 const showBlockCalculation = ref(false) // 是否显示区块换算结果
 
@@ -337,7 +351,6 @@ const handleTouchScroll = (e: TouchEvent, type: 'hour' | 'minute' | 'second') =>
   const startValue = type === 'hour' ? selectedHour.value : 
                     type === 'minute' ? selectedMinute.value : 
                     selectedSecond.value
-
   const onTouchMove = (e: TouchEvent) => {
     e.preventDefault()
     const touch = e.touches[0]
@@ -545,6 +558,7 @@ onMounted(() => {
     scrollToActive('second')
   })
   window.addEventListener('resize', handleResize)
+  console.log('currentBlockHeight:', props.currentBlockHeight)
 })
 
 onUnmounted(() => {

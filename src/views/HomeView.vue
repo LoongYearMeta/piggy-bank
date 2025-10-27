@@ -56,7 +56,7 @@
         </div>
         <div class="form-group">
           <!-- 自定义时间选择器 -->
-          <TimePicker ref="timePicker" />
+          <TimePicker ref="timePicker" :currentBlockHeight="curBlockHeight" @update:lockTime="handleLockTimeChange" />
         </div>
         <button type="submit" class="deposit-btn" :disabled="!formData.depositAmount || formData.depositAmount <= 0">
           冻结
@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, onUpdated } from 'vue'
 // import { useRouter } from 'vue-router'
 import TimePicker from './TimePicker.vue'
 import { API } from 'tbc-contract'
@@ -102,7 +102,7 @@ const network = import.meta.env.VITE_NETWORK || undefined // 网络环境
 // 表单数据-冻结
 const formData = reactive({
   depositAmount: 0, // 冻结金额
-  lockTime: null, // 冻结时间（换算为区块高度）
+  lockTime: 0, // 冻结时间（换算为区块高度）
 })
 // 表单数据-钱包
 const tbcBalance = ref(0) // 钱包余额 tbc-余额
@@ -128,6 +128,11 @@ watch(
     validateAmount()
   }
 )
+
+// 处理lockTime变化
+const handleLockTimeChange = (lockTime: number) => {
+  formData.lockTime = lockTime
+}
 
 // 冻结金额校验
 const validateAmount = (): boolean => {
@@ -196,23 +201,23 @@ const getBlockHeight = async () => {
 }
 
 // 构造冻结资产交易数据
-// const freezeTBC = async () => {
-//   const tbcAmount = formData.depositAmount
-//   const lockTime = 280760
-//   const address = '1Hiw63nWTTgAkjRU5SQyz6ASGKQuyHYaQP'
-//   try {
-//     // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
-//     const utxos = await API.getUTXOs(address, tbcAmount + 0.1, network)
-//     console.log('utxos:', utxos)
-//     // 如果需要单个 UTXO，取第一个
-//     if (utxos.length > 0) {
-//       const utxo = utxos[0]
-//       console.log('Selected utxo:', utxo)
-//     }
-//   } catch (error) {
-//     console.error('获取 UTXO 失败:', error)
-//   }
-// }
+const freezeTBC = async () => {
+  const tbcAmount = formData.depositAmount
+  const lockTime = 280760
+  const address = '1Hiw63nWTTgAkjRU5SQyz6ASGKQuyHYaQP'
+  try {
+    // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
+    const utxos = await API.getUTXOs(address, tbcAmount + 0.1, network)
+    console.log('utxos:', utxos)
+    // 如果需要单个 UTXO，取第一个
+    if (utxos.length > 0) {
+      const utxo = utxos[0]
+      console.log('Selected utxo:', utxo)
+    }
+  } catch (error) {
+    console.error('获取 UTXO 失败:', error)
+  }
+}
 // freezeTBC()
 
 // 提交冻结资产
