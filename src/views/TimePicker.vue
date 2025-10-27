@@ -170,7 +170,7 @@
     <div class="block-convert-container">
       <p class="block-convert">区块数换算: 1 区块 = 10 min</p>
       <Transition name="block-fade">
-        <p class="block-result" v-if="showBlockCalculation" @change="handleLockTimeChange">
+        <p class="block-result" v-if="showBlockCalculation">
           预计区块高度为：{{ calculatedBlockHeight }}
         </p>
       </Transition>
@@ -192,6 +192,7 @@ const emit = defineEmits<{
 }>()
 
 const handleLockTimeChange = () => {
+  console.log('test-handleLockTimeChange', calculatedBlockHeight.value)
   emit('update:lockTime', calculatedBlockHeight.value) // 发送当前lockTime给父组件
 }
 
@@ -204,7 +205,7 @@ const timeError = ref('')
 const activeTab = ref('date')
 
 // 区块换算相关
-const currentBlockHeight = ref(props.currentBlockHeight) // 当前区块高度，默认为100
+// const currentBlockHeight = ref(0) // 当前区块高度
 const calculatedBlockHeight = ref(0) // 计算后的区块高度
 const showBlockCalculation = ref(false) // 是否显示区块换算结果
 
@@ -436,7 +437,7 @@ const calculateBlockHeight = () => {
   const additionalBlocks = Math.round(timeDiffMinutes / 10)
   
   // 在默认区块数上增加得到结果
-  calculatedBlockHeight.value = currentBlockHeight.value + additionalBlocks
+  calculatedBlockHeight.value = props.currentBlockHeight + additionalBlocks
   showBlockCalculation.value = true
 }
 
@@ -448,6 +449,9 @@ const confirmSelection = () => {
   // 计算区块高度
   calculateBlockHeight()
   
+  // 通知父组件lockTime变化
+  handleLockTimeChange()
+  
   isPanelShow.value = false
   isFocused.value = false
 }
@@ -458,6 +462,10 @@ const clearSelection = () => {
   timeError.value = ''
   showBlockCalculation.value = false
   calculatedBlockHeight.value = 0
+  
+  // 通知父组件lockTime变化
+  handleLockTimeChange()
+  
   isPanelShow.value = false
   const now = new Date()
   selectedDate.value = now
@@ -581,10 +589,7 @@ defineExpose({
   validateTime,
   confirmSelection,
   getCalculatedBlockHeight: () => calculatedBlockHeight.value,
-  getCurrentBlockHeight: () => currentBlockHeight.value,
-  setCurrentBlockHeight: (height: number) => {
-    currentBlockHeight.value = height
-  }
+  getCurrentBlockHeight: () => props.currentBlockHeight,
 })
 </script>
 
@@ -777,30 +782,11 @@ defineExpose({
   position: relative;
   z-index: 2; /* 确保在淡蓝色区域上方 */
 }
-/* .el-time-spinner__list li.active::after{
-  content: ':';
-  position: absolute;
-  right: 10px;
-} */
 /* hover项：轻微背景色变化 */
 .el-time-spinner__list li:hover:not(.active) {
   background-color: #e6f7ff; /* 淡蓝色系hover */
   color: #409eff;
 }
-
-/* 分隔符样式：与整体风格统一 */
-/* .el-time-spinner__separator {
-  color: #409eff;
-  font-weight: bold;
-  font-size: 16px;
-  margin: 0;
-  padding-top: 90%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  align-self: flex-start;
-} */
 
 /* 面板底部按钮 */
 .el-picker-panel__footer {

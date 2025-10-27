@@ -56,7 +56,12 @@
         </div>
         <div class="form-group">
           <!-- 自定义时间选择器 -->
-          <TimePicker ref="timePicker" :currentBlockHeight="curBlockHeight" @update:lockTime="handleLockTimeChange" />
+          <TimePicker
+            ref="timePicker"
+            :currentBlockHeight="curBlockHeight"
+            @update:lockTime="handleLockTimeChange"
+            :disabled="!formData.depositAmount || formData.depositAmount <= 0"
+            />
         </div>
         <button type="submit" class="deposit-btn" :disabled="!formData.depositAmount || formData.depositAmount <= 0">
           冻结
@@ -67,11 +72,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted, onUpdated } from 'vue'
-// import { useRouter } from 'vue-router'
+import { ref, reactive, watch, onMounted } from 'vue'
 import TimePicker from './TimePicker.vue'
 import { API } from 'tbc-contract'
-import * as tbc from 'tbc-lib-js'
 import { Regex } from '../utils/reg'
 
 // 全局变量声明：Turing钱包接口
@@ -93,9 +96,6 @@ interface Errors {
   amountTip: string
   timeTip: string
 }
-
-// const router = useRouter()
-// const timePickerRef = ref()
 
 // 响应式数据
 const network = import.meta.env.VITE_NETWORK || undefined // 网络环境
@@ -195,6 +195,7 @@ const getBlockHeight = async () => {
   try {
     const res = await API.fetchBlockHeaders(network)
     curBlockHeight.value = res[0]?.height || 0
+    console.log('当前区块高度:', curBlockHeight.value)
   } catch (error) {
     console.error('获取当前区块高度失败:', error)
   }
@@ -203,12 +204,12 @@ const getBlockHeight = async () => {
 // 构造冻结资产交易数据
 const freezeTBC = async () => {
   const tbcAmount = formData.depositAmount
-  const lockTime = 280760
-  const address = '1Hiw63nWTTgAkjRU5SQyz6ASGKQuyHYaQP'
+  const lockTime = formData.lockTime
+  console.log('冻结金额:', tbcAmount, '锁定区块高度:', lockTime)
+  
   try {
     // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
-    const utxos = await API.getUTXOs(address, tbcAmount + 0.1, network)
-    console.log('utxos:', utxos)
+    const utxos = await API.getUTXOs(curAddress.value, tbcAmount + 0.1, network)
     // 如果需要单个 UTXO，取第一个
     if (utxos.length > 0) {
       const utxo = utxos[0]
@@ -218,67 +219,20 @@ const freezeTBC = async () => {
     console.error('获取 UTXO 失败:', error)
   }
 }
-// freezeTBC()
 
 // 提交冻结资产
-// const handleDeposit = () => {
-//   if (!validateAmount()) return
+const handleDeposit = () => {
+  if (!validateAmount()) return
+  
+  // 检查是否选择了冻结时间
+  if (!formData.lockTime) {
+    alert('请选择冻结时间')
+    return
+  }
+  
+  freezeTBC()
+}
 
-//   // 构造冻结记录
-//   const depositRecord = {
-//     id: Date.now().toString(),
-//     amount: depositAmount.value,
-//     note: depositNote.value,
-//     lockTime: lockTime.value,
-//     lockUnit: selectedUnit.value,
-//     date: new Date().toISOString(),
-//     address: curAddress.value
-//   }
-
-//   // 保存到本地存储
-//   const existingRecords = JSON.parse(localStorage.getItem('piggyBank_depositRecords') || '[]')
-//   existingRecords.push(depositRecord)
-//   localStorage.setItem('piggyBank_depositRecords', JSON.stringify(existingRecords))
-
-//   // 提示成功并重置表单
-//   // alert(`
-//   //   冻结成功！
-//   //   金额：${depositAmount.value.toFixed(6)} TBC
-//   //   时间：${lockTime.value}${selectedUnit.value}
-//   // `)
-//   depositAmount.value = null
-//   depositNote.value = ''
-//   lockTime.value = null
-//   selectedUnit.value = ''
-// }
-
-// 签名交易并广播
-// const signTransaction = async () => {
-//   // 初始化
-//   const utxos: tbc.Transaction.IUnspentOutput[] = [] // 存储未花费交易输出
-//   const utxos_satoshis: number[][] = [[],[]] // 存储未花费交易输出的金额
-//   const script_pubkeys: string[][] = [[],[]] // 存储未花费交易输出的脚本公钥
-//   const txraws: string[] = []
-//   const txs: tbc.Transaction[] = [] // 存储签名后的交易
-
-//   // 构建基础交易-未签名
-//   const tx = new tbc.Transaction()
-//     .from(utxos)
-//     .to('1Hiw63nWTTgAkjRU5SQyz6ASGKQuyHYaQP', 0.1)
-//     .change('1Hiw63nWTTgAkjRU5SQyz6ASGKQuyHYaQP')
-//     .fee(80)
-//     // .to(Address, amount)
-//     // .change(address)
-//     // .fee(80)
-//   txraws.push(tx.uncheckedSerialize()) // 未签名交易
-
-//   // 收集签名所需的UTXO信息 聪的数量和锁定脚本
-//   // for (let i = 0; i < utxos.length; i++) {
-//   //   utxos_satoshis[0].push(utxos[i].satoshis)
-//   //   script_pubkeys[0].push(utxos[i].script)
-//   // }
-// }
-// signTransaction()
 
 
 </script>
