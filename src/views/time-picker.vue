@@ -3,11 +3,12 @@
     <label>冻结时间</label>
     <!-- 输入框容器 -->
     <div class="el-time-picker" :class="{ 'is-active': isPanelShow }">
-      <div class="el-input" :class="{ 'is-focus': isFocused }">
+      <div class="el-input form-input" :class="{ 'is-focus': isFocused }">
         <input
           type="text"
           v-model="displayTime"
           placeholder="选择日期时间"
+          :class="{ 'error-input': timeError }"
           readonly
           @focus="handleFocus"
           @click="togglePanel"
@@ -181,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, defineProps, defineEmits } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 
 // 定义props
 const props = defineProps<{
@@ -468,14 +469,10 @@ const clearSelection = () => {
   
   // 通知父组件lockTime变化
   handleLockTimeChange()
-  
+
+  // 清空后仅关闭面板，不回填当前时间
   isPanelShow.value = false
-  const now = new Date()
-  selectedDate.value = now
-  selectedHour.value = now.getHours()
-  selectedMinute.value = now.getMinutes()
-  selectedSecond.value = now.getSeconds()
-  updateDisplayTime()
+  isFocused.value = false
 }
 
 // 更新显示时间（修复回显不一致问题）
@@ -625,18 +622,21 @@ defineExpose({
 .el-input { position: relative; width: 100%; }
 .el-input__inner {
   width: 100%;
-  padding: 10px 12px;
-  padding-right: 38px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  background-color: #fff;
-  color: #606266;
-  font-size: 14px;
-  line-height: 1;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 16px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  color: #333 !important;
+  caret-color: #333 !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
-.el-input__inner:focus { border-color: #409eff; box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2); }
+.el-input__inner:focus {
+  border-color: #a2d0fa;
+  box-shadow: 0 0 0 2px rgba(162, 208, 250, 0.3);
+}
 .el-input__suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #c0c4cc; transition: color 0.2s; }
 .el-input:focus-within .el-input__suffix { color: #409eff; }
 
@@ -721,7 +721,7 @@ defineExpose({
 .el-date-table__cell--selected { background-color: #409eff; color: #fff; }
 .el-date-table__cell:not(.el-date-table__cell--disabled):hover { background-color: #f5f7fa; }
 
-/* -------------------------- 核心优化：时间选择样式 -------------------------- */
+/* -------------------------- 时间选择样式 -------------------------- */
 .el-time-panel { padding: 8px 0; }
 .el-time-panel__content { display: flex; justify-content: center; align-items: flex-start; }
 
@@ -762,21 +762,6 @@ defineExpose({
 .el-time-spinner__wrapper::-webkit-scrollbar {
   display: none;
 }
-/* 淡蓝色选中区域（固定在中间，高度为单个项） */
-/* .el-time-spinner__wrapper::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 100%;
-  height: 36px;
-  background-color: #409eff1a;
-  border: 2px solid #409eff;
-  border-radius: 4px;
-  pointer-events: none;
-  box-sizing: border-box;
-  z-index: 1;
-} */
 
 /* 3. 选中项样式：突出显示并固定在淡蓝色区域内 */
 .el-time-spinner__list {
@@ -867,7 +852,16 @@ defineExpose({
 }
 
 /* 错误提示和说明文字 */
-.error-message { color: #f56c6c; font-size: 12px; margin-top: 4px; display: block; }
+.error-input {
+  border: 1px solid #ff4d4f !important;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1) !important;
+}
+.error-message { 
+  color: #ff4d4f; 
+  font-size: 0.875rem; 
+  margin-top: 4px; 
+  display: block; 
+}
 .block-convert-container { margin: 8px 0 0 0; }
 .block-convert { margin: 0 0 4px 0; font-size: 13px; color: #909399; }
 .block-result { 

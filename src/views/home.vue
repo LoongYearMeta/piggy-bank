@@ -61,7 +61,13 @@
             :currentBlockHeight="curBlockHeight"
             @update:lockTime="handleLockTimeChange"
           />
+          <Transition name="error-fade">
+            <span class="error-message" v-if="errors.timeTip">{{ errors.timeTip }}</span>
+          </Transition>
         </div>
+        <Transition name="error-fade">
+          <span class="error-message" v-if="submitError">{{ submitError }}</span>
+        </Transition>
         <button type="submit" class="deposit-btn" :disabled="!formData.depositAmount || formData.depositAmount <= 0">
           冻结
         </button>
@@ -119,6 +125,9 @@ const errors = reactive<Errors>({ // 错误提示
   timeTip: ''
 })
 
+// 提交阶段统一错误
+const submitError = ref('')
+
 // 时间选择器引用
 const timePicker = ref<InstanceType<typeof TimePicker>>()
 
@@ -138,6 +147,14 @@ watch(
   () => formData.depositAmount, // 监听formData中的depositAmount属性
   () => {
     validateAmount()
+  }
+)
+
+// 监听冻结时间变化，实时校验
+watch(
+  () => formData.lockTime, // 监听formData中的lockTime属性
+  () => {
+    validateLockTime()
   }
 )
 
@@ -164,6 +181,23 @@ const validateAmount = (): boolean => {
   // 金额校验
   if (depositAmount > tbcBalance.value) {
     errors.amountTip = '冻结金额不能大于钱包余额'
+    return false
+  }
+  return true
+}
+
+// 冻结时间校验
+const validateLockTime = (): boolean => {
+  errors.timeTip = ''
+  const lockTime = formData.lockTime
+  // 检查是否选择了冻结时间
+  if (!lockTime) {
+    errors.timeTip = '请选择冻结时间'
+    return false
+  }
+  // 校验时间选择器的有效性
+  if (timePicker.value && !timePicker.value.validateTime()) {
+    errors.timeTip = '请选择有效的冻结时间'
     return false
   }
   return true
@@ -314,27 +348,16 @@ const freezeTBC = async () => {
     API.broadcastTXraw(tx.uncheckedSerialize(), network)
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
-    console.error('冻结交易异常（真实原因）:', errMsg);
-    alert(`冻结失败：${errMsg}`); // 给用户显示真实错误
+    console.error('冻结交易异常:', errMsg);
+    submitError.value = `冻结失败：${errMsg}`
   }
 }
 
 // 提交冻结资产
 const handleDeposit = () => {
+  submitError.value = ''
   if (!validateAmount()) return
-  
-  // 检查是否选择了冻结时间
-  if (!formData.lockTime) {
-    alert('请选择冻结时间')
-    return
-  }
-  
-  // 校验时间选择器的有效性
-  if (timePicker.value && !timePicker.value.validateTime()) {
-    alert('请选择有效的冻结时间')
-    return
-  }
-  
+  if (!validateLockTime()) return
   freezeTBC()
 }
 
@@ -746,10 +769,10 @@ input:-internal-autofill-selected {
   -webkit-box-shadow: 0 0 0 100px #ffffff inset !important;
   box-shadow: 0 0 0 100px #ffffff inset !important;
   background-color: #ffffff !important; /* 双重保障背景色 */
-  /* 强制文字色（核心修改） */
+  /* 强制文字色 */
   color: #333 !important; /* 固定文字色为深色 */
   -webkit-text-fill-color: #333 !important; /* 兼容Safari/Chrome */
-  text-fill-color: #333 !important; /* 通用 fallback */
+  /* text-fill-color: #333 !important; 通用 fallback */
   /* 确保字体样式继承，避免文字模糊 */
   font-size: 16px !important; /* 与输入框正常字体大小一致 */
 }
