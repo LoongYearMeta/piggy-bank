@@ -38,7 +38,7 @@
         </div>
       </template>
       <!-- 冻结资产表单 -->
-      <h2 class="deposit-title">冻结资产</h2>
+      <h2 class="title">冻结资产</h2>
       <form @submit.prevent="handleDeposit" class="deposit-form">
         <!-- 冻结金额 -->
         <div class="form-group">
@@ -60,8 +60,7 @@
             ref="timePicker"
             :currentBlockHeight="curBlockHeight"
             @update:lockTime="handleLockTimeChange"
-            :disabled="!formData.depositAmount || formData.depositAmount <= 0"
-            />
+          />
         </div>
         <button type="submit" class="deposit-btn" :disabled="!formData.depositAmount || formData.depositAmount <= 0">
           冻结
@@ -73,7 +72,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
-import TimePicker from './TimePicker.vue'
+import TimePicker from './time-picker.vue'
 import { API } from 'tbc-contract'
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
@@ -120,10 +119,18 @@ const errors = reactive<Errors>({ // 错误提示
   timeTip: ''
 })
 
+// 时间选择器引用
+const timePicker = ref<InstanceType<typeof TimePicker>>()
+
 // 页面挂载时获取数据
-onMounted(() => {
+onMounted(async () => {
   // 钱包数据初始化
-  getWalletData()
+  await getWalletData()
+  
+  // 设置默认冻结时间（1小时后）
+  if (timePicker.value) {
+    timePicker.value.setDefaultTime()
+  }
 })
 
 // 监听金额变化，实时校验
@@ -322,6 +329,12 @@ const handleDeposit = () => {
     return
   }
   
+  // 校验时间选择器的有效性
+  if (timePicker.value && !timePicker.value.validateTime()) {
+    alert('请选择有效的冻结时间')
+    return
+  }
+  
   freezeTBC()
 }
 
@@ -330,11 +343,20 @@ const handleDeposit = () => {
 </script>
 
 <style scoped>
+/* 全局基础样式 */
+:deep(body) {
+  background-color: #f5f7fa; /* 固定浅色基础背景，不继承浏览器主题 */
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; /* 统一字体 */
+}
+
 /* 全局容器样式 */
 .home-container {
-  max-width: 100vw;
+  max-width: 500px; /* 限制最大宽度，优化大屏显示 */
   margin: 0 auto;
-  /* min-height: 100vh; */
   box-sizing: border-box;
 }
 
@@ -348,7 +370,7 @@ const handleDeposit = () => {
 }
 
 .title {
-  color: #3d3c63;
+  color: #3d3c63; /* 固定深色文字，不受主题影响 */
   font-size: 24px;
   font-weight: bold;
   margin: 0;
@@ -381,13 +403,15 @@ const handleDeposit = () => {
   margin-right: auto;
 }
 
-/* 冻结表单区域 */
+/* 冻结表单区域（高透明度+阴影，不透主题） */
 .deposit-section {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.95); /* 高不透明度，几乎不透底 */
   border-radius: 15px;
   padding: 20px;
   margin-bottom: 20px;
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); /* 兼容Safari */
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05); /* 增强层次感，弱化透底影响 */
 }
 
 .deposit-section p {
@@ -426,12 +450,21 @@ const handleDeposit = () => {
 .form-group input {
   width: 100%;
   padding: 12px;
-  border: none;
+  border: 1px solid #eee; /* 固定浅灰色边框，不依赖主题 */
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff; /* 纯色背景，完全不透底 */
   font-size: 16px;
   outline: none;
   box-sizing: border-box;
+  color: #333 !important; /* 固定输入文字色 */
+  caret-color: #333 !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 输入框聚焦状态 */
+.form-group input:focus {
+  border-color: #a2d0fa;
+  box-shadow: 0 0 0 2px rgba(162, 208, 250, 0.3);
 }
 
 /* 时间输入组（输入框+下拉组件） */
@@ -446,10 +479,10 @@ const handleDeposit = () => {
 .time-input-group input {
   flex: 1;
   padding: 14px 16px;
-  border: 1px solid #ddd;
+  border: 1px solid #eee;
   border-radius: 8px;
   font-size: 15px;
-  background: #fff;
+  background: #ffffff;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   -webkit-appearance: none;
   appearance: none;
@@ -473,10 +506,10 @@ const handleDeposit = () => {
 .select-value {
   padding: 14px 16px;
   padding-right: 40px;
-  border: 1px solid #ddd;
+  border: 1px solid #eee;
   border-radius: 8px;
   font-size: 15px;
-  background: #fff;
+  background: #ffffff; /* 纯色背景，不受主题影响 */
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -492,7 +525,7 @@ const handleDeposit = () => {
 
 /* 下拉箭头（带旋转动画） */
 .select-icon {
-  color: #666;
+  color: #666; /* 固定箭头颜色 */
   font-size: 12px;
   transition: transform 0.25s ease;
 }
@@ -510,7 +543,7 @@ const handleDeposit = () => {
   border: 1px solid #eee;
   border-top: none;
   border-radius: 0 0 8px 8px;
-  background: #fff;
+  background: #ffffff; /* 纯色背景，避免主题透显 */
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-top: -1px;
@@ -606,7 +639,7 @@ const handleDeposit = () => {
 
 /* 错误提示样式 */
 .error-message {
-  color: #ff4d4f;
+  color: #ff4d4f; /* 固定错误色，不受主题影响 */
   font-size: 0.875rem;
   margin-top: 4px;
   display: block;
@@ -664,6 +697,10 @@ const handleDeposit = () => {
 
 /* 移动端响应式适配 */
 @media (max-width: 375px) {
+  :deep(body) {
+    padding: 15px;
+  }
+
   .time-input-group {
     gap: 6px;
   }
@@ -697,5 +734,29 @@ const handleDeposit = () => {
     padding: 11px;
     font-size: 15px;
   }
+}
+
+/* 自动填充样式：背景+文字色统一固定 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:-internal-autofill-selected {
+  /* 覆盖背景色（原有） */
+  -webkit-box-shadow: 0 0 0 100px #ffffff inset !important;
+  box-shadow: 0 0 0 100px #ffffff inset !important;
+  background-color: #ffffff !important; /* 双重保障背景色 */
+  /* 强制文字色（核心修改） */
+  color: #333 !important; /* 固定文字色为深色 */
+  -webkit-text-fill-color: #333 !important; /* 兼容Safari/Chrome */
+  text-fill-color: #333 !important; /* 通用 fallback */
+  /* 确保字体样式继承，避免文字模糊 */
+  font-size: 16px !important; /* 与输入框正常字体大小一致 */
+}
+
+input:-webkit-autofill {
+  /* 用足够大的内阴影覆盖背景色 */
+  -webkit-box-shadow: 0 0 0 100px #ffffff inset !important;
+  box-shadow: 0 0 0 100px #ffffff inset !important;
 }
 </style>

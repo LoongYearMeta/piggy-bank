@@ -52,6 +52,7 @@
             <!-- 日期导航 -->
             <div class="el-picker-panel__header">
               <button 
+                type="button"
                 class="el-picker-panel__icon-btn" 
                 @click="changeMonth(-1)"
               >
@@ -59,6 +60,7 @@
               </button>
               <span class="el-picker-panel__label">{{ currentMonthLabel }}</span>
               <button 
+                type="button"
                 class="el-picker-panel__icon-btn" 
                 @click="changeMonth(1)"
               >
@@ -156,8 +158,8 @@
 
         <!-- 面板底部按钮 -->
         <div class="el-picker-panel__footer">
-          <button class="el-button el-button--text" @click="confirmSelection">确认</button>
-          <button class="el-button el-button--text" @click="clearSelection">清空</button>
+          <button type="button" class="el-button el-button--text" @click.stop="confirmSelection">确认</button>
+          <button type="button" class="el-button el-button--text" @click.stop="clearSelection">清空</button>
         </div>
       </div>
     </div>
@@ -452,6 +454,7 @@ const confirmSelection = () => {
   // 通知父组件lockTime变化
   handleLockTimeChange()
   
+  // 关闭面板
   isPanelShow.value = false
   isFocused.value = false
 }
@@ -583,6 +586,21 @@ document.addEventListener('click', (e) => {
   }
 })
 
+// 设置默认时间（1小时后）
+const setDefaultTime = () => {
+  const now = new Date()
+  const defaultTime = new Date(now.getTime() + 60 * 60 * 1000) // 1小时后
+  
+  selectedDate.value = defaultTime
+  selectedHour.value = defaultTime.getHours()
+  selectedMinute.value = defaultTime.getMinutes()
+  selectedSecond.value = defaultTime.getSeconds()
+  
+  updateDisplayTime()
+  calculateBlockHeight()
+  handleLockTimeChange()
+}
+
 // 对外暴露接口
 defineExpose({
   getTime: () => displayTime.value,
@@ -590,10 +608,18 @@ defineExpose({
   confirmSelection,
   getCalculatedBlockHeight: () => calculatedBlockHeight.value,
   getCurrentBlockHeight: () => props.currentBlockHeight,
+  setDefaultTime,
 })
 </script>
 
 <style scoped>
+.form-group label {
+  display: block;
+  color: #3d3c63;
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 500;
+}
 /* 基础样式保持不变，重点优化时间选择区域 */
 .el-time-picker { position: relative; display: inline-block; width: 100%; }
 .el-input { position: relative; width: 100%; }
