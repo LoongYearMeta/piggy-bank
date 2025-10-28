@@ -240,7 +240,6 @@ const getBlockHeight = async () => {
   try {
     const res = await API.fetchBlockHeaders(network)
     curBlockHeight.value = res[0]?.height || 0
-    console.log('当前区块高度:', curBlockHeight.value)
   } catch (error) {
     console.error('获取当前区块高度失败:', error)
   }
@@ -294,20 +293,36 @@ const freezeTBC = async () => {
       throw new Error("script_pubkeys[0] 必须是非空数组");
     }
     // console.log('参数验证通过，开始签名...')
-    // 对交易进行签名
-    const { sigs } = await window.Turing.signTransaction({
+    // 对交易进行签名（兼容新旧钱包返回：优先 sigs，缺失则尝试 sig）
+    const signRes: any = await window.Turing.signTransaction({
       txraws,
       utxos_satoshis,
       script_pubkeys
     })
-    if (!sigs || sigs.length === 0) throw new Error("交易签名失败");
+    let sigInput: string[] = []
+    try {
+      if (signRes && signRes.sigs) {
+        const sigs = signRes.sigs
+        sigInput = Array.isArray(sigs[0]) ? sigs[0] : sigs
+      } else if (signRes && signRes.sig) {
+        const sig = signRes.sig
+        sigInput = Array.isArray(sig) ? sig : [sig]
+      }
+      if (!sigInput || sigInput.length === 0) {
+        throw new Error('签名数据为空')
+      }
+    } catch (e) {
+      throw new Error('交易签名失败：未获取到有效签名（兼容sigs/sig均失败）')
+    }
+
     // 将签名添加到交易中，设置UTXO的解锁脚本
-    for(let i = 0; i < utxos.length; i++) {
+    for (let i = 0; i < utxos.length; i++) {
+      const sig = sigInput[i]
+      if (!sig) throw new Error(`交易签名失败：缺少第${i}个输入的签名`)
       tx.setInputScript({ inputIndex: i }, () => {
-        const sig = sigs[i]![i]!
-        const sig_length = (sig.length / 2).toString(16);
-        const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16);
-        return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString());
+        const sig_length = (sig.length / 2).toString(16)
+        const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16)
+        return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString())
       })
     }
     const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network)
