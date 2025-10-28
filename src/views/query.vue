@@ -39,11 +39,11 @@
     <!-- 资产统计概览 -->
     <div class="stats-section">
       <div class="stat-card frozen">
-        <div class="stat-value">{{ frozenTotal.toFixed(6) }}</div>
+        <div class="stat-value">{{ frozenTotal }}</div>
         <div class="stat-label">已冻结资产 (TBC)</div>
       </div>
       <div class="stat-card unfrozen">
-        <div class="stat-value">{{ unfrozenTotal.toFixed(6) }}</div>
+        <div class="stat-value">{{ unfrozenTotal }}</div>
         <div class="stat-label">可解冻资产 (TBC)</div>
       </div>
     </div>
@@ -52,12 +52,13 @@
     <div class="unfrozen-section">
       <h2 class="section-title">可解冻资产</h2>
       <div v-if="unfrozenAssets.length === 0" class="empty-state">
-        <div class="empty-icon">🔒</div>
+        <!-- <div class="empty-icon">🔒</div> -->
+        <img src="../assets/empty.svg" class="empty-icon"></img>
         <p>暂无可解冻资产</p>
       </div>
       
       <div v-else class="assets-list">
-        <div 
+        <div
           v-for="asset in unfrozenAssets" 
           :key="asset.txId + '-' + asset.outputIndex" 
           class="asset-card unfrozen-card"
@@ -90,7 +91,7 @@
     <div class="frozen-section">
       <h2 class="section-title">已冻结资产</h2>
       <div v-if="frozenAssets.length === 0" class="empty-state">
-        <div class="empty-icon">❄️</div>
+        <img src="../assets/empty.svg" class="empty-icon"></img>
         <p>暂无已冻结资产</p>
       </div>
       
@@ -221,14 +222,19 @@ const loadAssets = async () => {
   
   try {
     errorMessage.value = ''
-    
-    // 获取已冻结资产
+    // 获取已冻结的TBC余额
+    frozenTotal.value = await API.fetchFrozenTBCBalance(curAddress.value, network)
+    console.log('已冻结资产总额:', frozenTotal)
+
+    // 获取已冻结的UTXO列表
     const frozenList = await API.fetchFrozenUTXOList(curAddress.value, network)
+    console.log('已冻结资产:', frozenList)
     frozenAssets.value = frozenList || []
     
-    // 获取可解冻资产
-    const unfrozenList = await API.fetchUnfrozenUTXOList(curAddress.value, network)
-    unfrozenAssets.value = unfrozenList || []
+    // 获取可解冻的UTXO列表
+    // const unfrozenList = await API.fetchUnfrozenUTXOList(curAddress.value, network)
+    // console.log('可解冻资产:', unfrozenList)
+    // unfrozenAssets.value = unfrozenList || []
     
     // 计算总额
     frozenTotal.value = frozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
