@@ -5,417 +5,699 @@
       <router-link to="/" class="back-btn">
         ← 返回
       </router-link>
-      <h1 class="title">📊 存款记录</h1>
+      <h1 class="title">解冻资产</h1>
       <div class="placeholder"></div>
     </header>
 
-    <!-- 统计概览 -->
+    <!-- 钱包信息区域 -->
+    <div class="wallet-section">
+      <template v-if="curAddress">
+        <div class="form-group">
+          <label>当前钱包地址</label>
+          <input
+            v-model="curAddress"
+            disabled
+          />
+        </div>
+        <div class="form-group">
+          <label>当前钱包余额(TBC)</label>
+          <input
+            v-model="tbcBalance"
+            disabled
+          />
+        </div>
+        <div class="form-group">
+          <label>当前区块高度</label>
+          <input
+            v-model="curBlockHeight"
+            disabled
+          />
+        </div>
+      </template>
+    </div>
+
+    <!-- 资产统计概览 -->
     <div class="stats-section">
-      <div class="stat-card">
-        <div class="stat-value">¥{{ totalAmount.toFixed(2) }}</div>
-        <div class="stat-label">总存款</div>
+      <div class="stat-card frozen">
+        <div class="stat-value">{{ frozenTotal.toFixed(6) }}</div>
+        <div class="stat-label">已冻结资产 (TBC)</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ depositRecords.length }}</div>
-        <div class="stat-label">存款次数</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">¥{{ averageAmount.toFixed(2) }}</div>
-        <div class="stat-label">平均金额</div>
+      <div class="stat-card unfrozen">
+        <div class="stat-value">{{ unfrozenTotal.toFixed(6) }}</div>
+        <div class="stat-label">可解冻资产 (TBC)</div>
       </div>
     </div>
 
-    <!-- 筛选和排序 -->
-    <div class="filter-section">
-      <div class="filter-group">
-        <label>按时间排序:</label>
-        <select v-model="sortBy" @change="sortRecords">
-          <option value="newest">最新优先</option>
-          <option value="oldest">最早优先</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>金额范围:</label>
-        <select v-model="amountFilter" @change="filterRecords">
-          <option value="all">全部</option>
-          <option value="small">小于50元</option>
-          <option value="medium">50-200元</option>
-          <option value="large">大于200元</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 存款记录列表 -->
-    <div class="records-section">
-      <h2>存款记录</h2>
-      <div v-if="filteredRecords.length === 0" class="empty-state">
-        <div class="empty-icon">📝</div>
-        <p>暂无存款记录</p>
-        <router-link to="/" class="start-btn">开始存钱</router-link>
+    <!-- 可解冻资产列表 -->
+    <div class="unfrozen-section">
+      <h2 class="section-title">可解冻资产</h2>
+      <div v-if="unfrozenAssets.length === 0" class="empty-state">
+        <div class="empty-icon">🔒</div>
+        <p>暂无可解冻资产</p>
       </div>
       
-      <div v-else class="records-list">
+      <div v-else class="assets-list">
         <div 
-          v-for="record in filteredRecords" 
-          :key="record.id" 
-          class="record-item"
+          v-for="asset in unfrozenAssets" 
+          :key="asset.txId + '-' + asset.outputIndex" 
+          class="asset-card unfrozen-card"
         >
-          <div class="record-header">
-            <div class="record-amount">+¥{{ record.amount.toFixed(2) }}</div>
-            <div class="record-date">{{ formatDate(record.date) }}</div>
+          <div class="asset-header">
+            <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} TBC</div>
+            <button 
+              @click="unfreezeAsset(asset)" 
+              class="unfreeze-btn"
+              :disabled="isUnfreezing"
+            >
+              {{ isUnfreezing ? '解冻中...' : '解冻' }}
+            </button>
           </div>
-          <div v-if="record.note" class="record-note">
-            {{ record.note }}
-          </div>
-          <div class="record-time">
-            {{ formatTime(record.date) }}
+          <div class="asset-info">
+            <div class="info-item">
+              <span class="info-label">冻结时间:</span>
+              <span class="info-value">{{ formatLockTime(asset.lockTime) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">解锁区块:</span>
+              <span class="info-value">{{ asset.lockTime }}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 清空记录按钮 -->
-    <div v-if="depositRecords.length > 0" class="clear-section">
-      <button @click="clearAllRecords" class="clear-btn">
-        🗑️ 清空所有记录
-      </button>
+    <!-- 已冻结资产列表 -->
+    <div class="frozen-section">
+      <h2 class="section-title">已冻结资产</h2>
+      <div v-if="frozenAssets.length === 0" class="empty-state">
+        <div class="empty-icon">❄️</div>
+        <p>暂无已冻结资产</p>
+      </div>
+      
+      <div v-else class="assets-list">
+        <div 
+          v-for="asset in frozenAssets" 
+          :key="asset.txId + '-' + asset.outputIndex" 
+          class="asset-card frozen-card"
+        >
+          <div class="asset-header">
+            <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} TBC</div>
+            <div class="status-badge frozen">已冻结</div>
+          </div>
+          <div class="asset-info">
+            <div class="info-item">
+              <span class="info-label">冻结时间:</span>
+              <span class="info-value">{{ formatLockTime(asset.lockTime) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">解锁区块:</span>
+              <span class="info-value">{{ asset.lockTime }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- 错误提示 -->
+    <Transition name="error-fade">
+      <span class="error-message" v-if="errorMessage">{{ errorMessage }}</span>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-// import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { API } from 'tbc-contract'
+// @ts-ignore
+import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
+import * as tbc from "tbc-lib-js";
 
-// const router = useRouter()
+// 全局变量声明：Turing钱包接口
+declare global {
+  interface Window {
+    Turing: {
+      connect(): Promise<void>
+      disconnect(): Promise<void>
+      isConnected(): Promise<boolean>
+      getPubKey(): Promise<{ tbcPubKey: string }>
+      getAddress(): Promise<{ tbcAddress: string }>
+      getBalance(): Promise<{ tbc: number }>
+      signTransaction({txraws, utxos_satoshis, script_pubkeys}: {txraws: string[], utxos_satoshis: number[][], script_pubkeys: string[][]}): Promise<{ sigs: string[] }>
+    }
+  }
+}
 
 // 响应式数据
-const depositRecords = ref<Array<{
-  id: string
-  amount: number
-  note: string
-  date: string
-}>>([])
-const sortBy = ref('newest')
-const amountFilter = ref('all')
+const network = import.meta.env.VITE_NETWORK || undefined // 网络环境
+const tbcBalance = ref(0) // 钱包余额
+const curAddress = ref('') // 钱包地址
+const curBlockHeight = ref(0) // 当前区块高度
+const frozenAssets = ref<any[]>([]) // 已冻结资产
+const unfrozenAssets = ref<any[]>([]) // 可解冻资产
+const frozenTotal = ref(0) // 已冻结总额
+const unfrozenTotal = ref(0) // 可解冻总额
+const errorMessage = ref('') // 错误信息
+const isUnfreezing = ref(false) // 是否正在解冻
 
-// 计算属性
-const totalAmount = computed(() => {
-  return depositRecords.value.reduce((sum, record) => sum + record.amount, 0)
+// 其他数据-本地存储
+const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
+
+// 页面挂载时获取数据
+onMounted(async () => {
+  await getWalletData()
+  await loadAssets()
 })
 
-const averageAmount = computed(() => {
-  if (depositRecords.value.length === 0) return 0
-  return totalAmount.value / depositRecords.value.length
-})
+// 获取钱包数据
+const getWalletData = async () => {
+  await getAddress()
+  await getBalance()
+  await getBlockHeight()
+}
 
-const filteredRecords = computed(() => {
-  let records = [...depositRecords.value]
+// 获取钱包地址
+const getAddress = async () => {
+  if (!window.Turing) {
+    errorMessage.value = '请先安装Turing钱包'
+    return
+  }
+  try {
+    await window.Turing.connect()
+    const { tbcAddress } = await window.Turing.getAddress()
+    localStorage.setItem(STORAGE_KEY, tbcAddress)
+    curAddress.value = tbcAddress
+  } catch (error) {
+    console.error('获取钱包地址失败:', error)
+    errorMessage.value = '获取钱包地址失败'
+  }
+}
 
-  // 按金额筛选
-  if (amountFilter.value !== 'all') {
-    records = records.filter(record => {
-      switch (amountFilter.value) {
-        case 'small':
-          return record.amount < 50
-        case 'medium':
-          return record.amount >= 50 && record.amount <= 200
-        case 'large':
-          return record.amount > 200
-        default:
-          return true
-      }
+// 获取钱包余额
+const getBalance = async () => {
+  try {
+    const tbc = await API.getTBCbalance(curAddress.value, network)
+    tbcBalance.value = tbc / 1000000
+  } catch (error) {
+    console.error('获取钱包余额失败:', error)
+    errorMessage.value = '获取钱包余额失败'
+  }
+}
+
+// 获取当前区块高度
+const getBlockHeight = async () => {
+  try {
+    const res = await API.fetchBlockHeaders(network)
+    curBlockHeight.value = res[0]?.height || 0
+    console.log('当前区块高度:', curBlockHeight.value)
+  } catch (error) {
+    console.error('获取当前区块高度失败:', error)
+    errorMessage.value = '获取当前区块高度失败'
+  }
+}
+
+// 加载资产数据
+const loadAssets = async () => {
+  if (!curAddress.value) return
+  
+  try {
+    errorMessage.value = ''
+    
+    // 获取已冻结资产
+    const frozenList = await API.fetchFrozenUTXOList(curAddress.value, network)
+    frozenAssets.value = frozenList || []
+    
+    // 获取可解冻资产
+    const unfrozenList = await API.fetchUnfrozenUTXOList(curAddress.value, network)
+    unfrozenAssets.value = unfrozenList || []
+    
+    // 计算总额
+    frozenTotal.value = frozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
+    unfrozenTotal.value = unfrozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
+    
+    console.log('已冻结资产:', frozenAssets.value)
+    console.log('可解冻资产:', unfrozenAssets.value)
+  } catch (error) {
+    console.error('加载资产失败:', error)
+    errorMessage.value = '加载资产失败'
+  }
+}
+
+// 解冻资产
+const unfreezeAsset = async (asset: any) => {
+  if (isUnfreezing.value) return
+  
+  try {
+    isUnfreezing.value = true
+    errorMessage.value = ''
+    
+    // 获取公钥
+    const { tbcPubKey } = await window.Turing.getPubKey()
+    const publicKey = new tbc.PublicKey(tbcPubKey)
+    
+    // 构造解冻交易
+    const unfreezeTx = await piggyBank.unfreezeTBC(curAddress.value, [asset], network)
+    const tx = new tbc.Transaction(unfreezeTx)
+    
+    // 准备签名参数
+    const utxos_satoshis: number[][] = [[asset.satoshis]]
+    const script_pubkeys: string[][] = [[asset.script]]
+    const txraws: string[] = [tx.uncheckedSerialize()]
+    
+    // 对交易进行签名
+    const { sigs } = await window.Turing.signTransaction({
+      txraws,
+      utxos_satoshis,
+      script_pubkeys
     })
+    
+    if (!sigs || sigs.length === 0) throw new Error("交易签名失败")
+    
+    // 将签名添加到交易中
+    tx.setInputScript({ inputIndex: 0 }, () => {
+      const sig = sigs[0]![0]!
+      const sig_length = (sig.length / 2).toString(16)
+      const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16)
+      return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString())
+    })
+    
+    // 广播交易
+    await API.broadcastTXraw(tx.uncheckedSerialize(), network)
+    
+    // 重新加载资产数据
+    await loadAssets()
+    
+    alert('解冻成功！')
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : JSON.stringify(error)
+    console.error('解冻失败:', errMsg)
+    errorMessage.value = `解冻失败：${errMsg}`
+  } finally {
+    isUnfreezing.value = false
   }
+}
 
-  // 按时间排序
-  records.sort((a, b) => {
-    const dateA = new Date(a.date)
-    const dateB = new Date(b.date)
-    return sortBy.value === 'newest' ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime()
-  })
-
-  return records
-})
-
-// 方法
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
+// 格式化锁定时间
+const formatLockTime = (lockTime: number) => {
   const now = new Date()
-  const diffTime = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) {
-    return '今天'
-  } else if (diffDays === 1) {
-    return '昨天'
-  } else if (diffDays < 7) {
-    return `${diffDays}天前`
-  } else {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  }
+  const lockDate = new Date(now.getTime() + (lockTime - curBlockHeight.value) * 10 * 60 * 1000)
+  
+  const year = lockDate.getFullYear()
+  const month = String(lockDate.getMonth() + 1).padStart(2, '0')
+  const day = String(lockDate.getDate()).padStart(2, '0')
+  const hour = String(lockDate.getHours()).padStart(2, '0')
+  const minute = String(lockDate.getMinutes()).padStart(2, '0')
+  
+  return `${year}-${month}-${day} ${hour}:${minute}`
 }
-
-const formatTime = (dateString: string) => {
-  const date = new Date(dateString)
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-
-const sortRecords = () => {
-  // 排序逻辑在计算属性中处理
-}
-
-const filterRecords = () => {
-  // 筛选逻辑在计算属性中处理
-}
-
-const clearAllRecords = () => {
-  if (confirm('确定要清空所有存款记录吗？此操作不可恢复！')) {
-    depositRecords.value = []
-    localStorage.removeItem('piggyBank_depositRecords')
-    alert('所有记录已清空')
-  }
-}
-
-const loadRecords = () => {
-  const saved = localStorage.getItem('piggyBank_depositRecords')
-  if (saved) {
-    depositRecords.value = JSON.parse(saved)
-  }
-}
-
-onMounted(() => {
-  loadRecords()
-})
 </script>
 
 <style scoped>
-.query-container {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
+/* 全局基础样式 */
+:deep(body) {
+  background-color: #f5f7fa;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: 0;
+  padding: 25px; /* 加大页面内边距 */
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* 全局容器样式 */
+.query-container {
+  max-width: 900px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* 顶部导航 */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  padding: 20px 0;
+  margin-bottom: 35px; /* 加大底部外边距 */
+  padding: 25px 0; /* 加大上下内边距 */
+}
+
+.title {
+  color: #3d3c63;
+  font-size: 28px; /* 加大标题字体 */
+  font-weight: bold;
+  margin: 0;
 }
 
 .back-btn {
-  color: white;
-  text-decoration: none;
-  font-size: 16px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #d5e7fc;
+  color: #3d3c63;
+  padding: 12px 20px; /* 加大按钮内边距 */
   border-radius: 20px;
+  text-decoration: none;
+  font-size: 16px; /* 加大按钮字体 */
   transition: all 0.3s ease;
 }
 
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #a2d0fa;
   transform: translateY(-2px);
 }
 
-.title {
-  color: white;
-  font-size: 20px;
-  font-weight: bold;
-}
-
 .placeholder {
-  width: 60px;
+  width: 80px; /* 加大占位宽度 */
 }
 
+/* 钱包信息区域 */
+.wallet-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  padding: 25px; /* 加大内边距 */
+  margin-bottom: 25px; /* 加大底部外边距 */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* 表单基础样式 */
+.form-group {
+  margin-bottom: 20px; /* 加大底部外边距 */
+  margin-top: 15px; /* 加大顶部外边距 */
+}
+
+.form-group label {
+  display: block;
+  color: #3d3c63;
+  margin-bottom: 8px; /* 加大底部外边距 */
+  font-size: 15px; /* 加大标签字体 */
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 15px; /* 加大输入框内边距 */
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 18px; /* 加大输入框字体 */
+  outline: none;
+  box-sizing: border-box;
+  color: #333 !important;
+  caret-color: #333 !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-group input:focus {
+  border-color: #a2d0fa;
+  box-shadow: 0 0 0 2px rgba(162, 208, 250, 0.3);
+}
+
+/* 资产统计概览 */
 .stats-section {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px; /* 加大卡片间距 */
+  margin-bottom: 35px; /* 加大底部外边距 */
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 15px;
-  padding: 20px 15px;
+  padding: 25px; /* 加大内边距 */
   text-align: center;
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.stat-card.frozen {
+  border-left: 4px solid #ff6b6b;
+}
+
+.stat-card.unfrozen {
+  border-left: 4px solid #51cf66;
 }
 
 .stat-value {
-  color: white;
-  font-size: 18px;
+  color: #3d3c63;
+  font-size: 24px; /* 加大数值字体 */
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 8px; /* 加大底部外边距 */
 }
 
 .stat-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 12px;
+  color: #666;
+  font-size: 14px; /* 加大标签字体 */
 }
 
-.filter-section {
-  background: rgba(255, 255, 255, 0.1);
+/* 资产列表区域 */
+.unfrozen-section,
+.frozen-section {
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
+  padding: 25px; /* 加大内边距 */
+  margin-bottom: 25px; /* 加大底部外边距 */
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
 }
 
-.filter-group {
-  margin-bottom: 15px;
-}
-
-.filter-group:last-child {
-  margin-bottom: 0;
-}
-
-.filter-group label {
-  display: block;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.filter-group select {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  outline: none;
-}
-
-.records-section {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
-  backdrop-filter: blur(10px);
-}
-
-.records-section h2 {
-  color: white;
-  margin-bottom: 20px;
-  font-size: 18px;
+.section-title {
+  color: #3d3c63;
+  margin-bottom: 25px; /* 加大底部外边距 */
+  font-size: 20px; /* 加大标题字体 */
+  font-weight: bold;
 }
 
 .empty-state {
   text-align: center;
-  padding: 40px 20px;
+  padding: 50px 20px; /* 加大上下内边距 */
 }
 
 .empty-icon {
-  font-size: 48px;
-  margin-bottom: 15px;
+  font-size: 60px; /* 加大图标尺寸 */
+  margin-bottom: 20px; /* 加大底部外边距 */
 }
 
 .empty-state p {
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 20px;
+  color: #666;
+  margin-bottom: 25px; /* 加大底部外边距 */
+  font-size: 16px; /* 加大提示字体 */
 }
 
-.start-btn {
-  display: inline-block;
-  background: linear-gradient(45deg, #ffd700, #ffed4e);
-  color: #333;
-  padding: 12px 24px;
-  border-radius: 25px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: all 0.3s ease;
-}
-
-.start-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
-}
-
-.records-list {
-  max-height: 400px;
+/* 资产卡片 */
+.assets-list {
+  max-height: 550px; /* 加大滚动区域高度 */
   overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px; /* 加大卡片间距 */
 }
 
-.record-item {
-  background: rgba(255, 255, 255, 0.1);
+.asset-card {
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 10px;
-  border-left: 4px solid #ffd700;
+  padding: 25px; /* 加大内边距 */
+  border: 1px solid #eee;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.record-header {
+.asset-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.unfrozen-card {
+  border-left: 4px solid #51cf66;
+}
+
+.frozen-card {
+  border-left: 4px solid #ff6b6b;
+}
+
+.asset-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 20px; /* 加大底部外边距 */
 }
 
-.record-amount {
-  color: #ffd700;
-  font-size: 18px;
+.asset-amount {
+  color: #3d3c63;
+  font-size: 20px; /* 加大金额字体 */
   font-weight: bold;
 }
 
-.record-date {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-}
-
-.record-note {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  margin-bottom: 5px;
-  font-style: italic;
-}
-
-.record-time {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 12px;
-}
-
-.clear-section {
-  text-align: center;
-}
-
-.clear-btn {
-  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+.unfreeze-btn {
+  background: #51cf66;
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
-  font-size: 14px;
+  padding: 12px 24px; /* 加大按钮内边距 */
+  border-radius: 20px;
+  font-size: 15px; /* 加大按钮字体 */
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: 90px;
 }
 
-.clear-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+.unfreeze-btn:hover:not(:disabled) {
+  background: #40c057;
+  transform: translateY(-1px);
+}
+
+.unfreeze-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-badge {
+  padding: 8px 18px; /* 加大徽章内边距 */
+  border-radius: 12px;
+  font-size: 13px; /* 加大徽章字体 */
+  font-weight: bold;
+}
+
+.status-badge.frozen {
+  background: #ff6b6b;
+  color: white;
+}
+
+.asset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* 加大信息项间距 */
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0; /* 加大上下内边距 */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  color: #666;
+  font-size: 14px; /* 加大标签字体 */
+  font-weight: 500;
+}
+
+.info-value {
+  color: #3d3c63;
+  font-size: 14px; /* 加大数值字体 */
+  font-weight: 600;
+}
+
+/* 错误提示样式 */
+.error-message {
+  color: #ff4d4f;
+  font-size: 1rem; /* 加大错误提示字体 */
+  margin-top: 8px; /* 加大顶部外边距 */
+  display: block;
+  text-align: center;
+  padding: 12px; /* 加大内边距 */
+  background: rgba(255, 77, 79, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 77, 79, 0.2);
+}
+
+/* 错误提示动画 */
+.error-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+.error-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.error-fade-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.error-fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.error-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.error-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
 }
 
 /* 滚动条样式 */
-.records-list::-webkit-scrollbar {
-  width: 6px;
+.assets-list::-webkit-scrollbar {
+  width: 8px; /* 加大滚动条宽度 */
 }
 
-.records-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+.assets-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
 }
 
-.records-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
+.assets-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
 }
 
-.records-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+.assets-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* 移动端响应式适配 */
+@media (max-width: 768px) {
+  .query-container {
+    width: 95%;
+    max-width: 100%;
+  }
+  
+  .stats-section {
+    grid-template-columns: 1fr;
+    gap: 20px; /* 调整移动端间距 */
+  }
+  
+  .assets-list {
+    grid-template-columns: 1fr;
+    max-height: 500px; /* 调整移动端滚动高度 */
+  }
+  
+  .asset-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px; /* 调整移动端间距 */
+  }
+  
+  .unfreeze-btn {
+    align-self: flex-end;
+    min-width: 120px; /* 调整移动端按钮宽度 */
+  }
+}
+
+@media (max-width: 480px) {
+  :deep(body) {
+    padding: 20px; /* 调整移动端页面内边距 */
+  }
+  
+  .asset-card {
+    padding: 20px; /* 调整移动端卡片内边距 */
+  }
+  
+  .asset-amount {
+    font-size: 18px; /* 调整移动端金额字体 */
+  }
+  
+  .unfreeze-btn {
+    padding: 10px 20px; /* 调整移动端按钮内边距 */
+    font-size: 14px; /* 调整移动端按钮字体 */
+  }
 }
 </style>

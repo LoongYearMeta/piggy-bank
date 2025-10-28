@@ -27,5 +27,6 @@ body {
 
 #app {
   min-height: calc(100vh - 2rem);
+  min-width: calc(100vw - 2rem);
 }
 </style>

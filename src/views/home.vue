@@ -135,7 +135,6 @@ const timePicker = ref<InstanceType<typeof TimePicker>>()
 onMounted(async () => {
   // 钱包数据初始化
   await getWalletData()
-  
   // 设置默认冻结时间（1小时后）
   if (timePicker.value) {
     timePicker.value.setDefaultTime()
@@ -361,8 +360,6 @@ const handleDeposit = () => {
   freezeTBC()
 }
 
-
-
 </script>
 
 <style scoped>
@@ -378,7 +375,7 @@ const handleDeposit = () => {
 
 /* 全局容器样式 */
 .home-container {
-  max-width: 500px; /* 限制最大宽度，优化大屏显示 */
+  max-width: 800px; /* 增加最大宽度 */
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -719,7 +716,14 @@ const handleDeposit = () => {
 }
 
 /* 移动端响应式适配 */
-@media (max-width: 375px) {
+@media (max-width: 768px) {
+  .home-container {
+    width: 95%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
   :deep(body) {
     padding: 15px;
   }
