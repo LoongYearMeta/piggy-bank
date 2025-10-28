@@ -352,20 +352,17 @@ const handleTouchScroll = (e: TouchEvent, type: 'hour' | 'minute' | 'second') =>
   const touch = e.touches[0]
   if (!touch) return
   const startY = touch.clientY
-  const startValue = type === 'hour' ? selectedHour.value : 
-                    type === 'minute' ? selectedMinute.value : 
+  const startValue = type === 'hour' ? selectedHour.value :
+                    type === 'minute' ? selectedMinute.value :
                     selectedSecond.value
   const onTouchMove = (e: TouchEvent) => {
     e.preventDefault()
     const touch = e.touches[0]
     if (!touch) return
-    
     const deltaY = startY - touch.clientY
     const itemHeight = 36
     const scrollSteps = Math.round(deltaY / itemHeight)
-    
     let newValue = startValue + scrollSteps
-    
     // 限制范围
     if (type === 'hour') {
       newValue = Math.max(0, Math.min(23, newValue))
@@ -377,7 +374,6 @@ const handleTouchScroll = (e: TouchEvent, type: 'hour' | 'minute' | 'second') =>
       newValue = Math.max(0, Math.min(59, newValue))
       selectedSecond.value = newValue
     }
-    
     updateDisplayTime()
   }
 
@@ -401,8 +397,8 @@ const scrollToActive = async (type: 'hour' | 'minute' | 'second') => {
   const wrapper = list?.parentElement as HTMLDivElement
   if (!list || !wrapper) return
 
-  const currentValue = type === 'hour' ? selectedHour.value : 
-                      type === 'minute' ? selectedMinute.value : 
+  const currentValue = type === 'hour' ? selectedHour.value :
+                      type === 'minute' ? selectedMinute.value :
                       selectedSecond.value
 
   const activeItem = list.querySelector(`[data-${type}="${currentValue}"]`)
@@ -426,19 +422,14 @@ const scrollToActive = async (type: 'hour' | 'minute' | 'second') => {
 // 计算区块高度
 const calculateBlockHeight = () => {
   if (!displayTime.value) return
-  
   const selectedTime = new Date(displayTime.value)
   const currentTime = new Date()
-  
   // 计算时间差（毫秒）
   const timeDiff = selectedTime.getTime() - currentTime.getTime()
-  
   // 转换为分钟
   const timeDiffMinutes = timeDiff / (1000 * 60)
-  
   // 除以10分钟并四舍五入得到需要增加的区块数
   const additionalBlocks = Math.round(timeDiffMinutes / 10)
-  
   // 在默认区块数上增加得到结果
   calculatedBlockHeight.value = props.currentBlockHeight + additionalBlocks
   showBlockCalculation.value = true
@@ -448,13 +439,10 @@ const calculateBlockHeight = () => {
 const confirmSelection = () => {
   const isValid = validateTime()
   if (!isValid) return
-  
   // 计算区块高度
   calculateBlockHeight()
-  
   // 通知父组件lockTime变化
   handleLockTimeChange()
-  
   // 关闭面板
   isPanelShow.value = false
   isFocused.value = false
@@ -466,10 +454,8 @@ const clearSelection = () => {
   timeError.value = ''
   showBlockCalculation.value = false
   calculatedBlockHeight.value = 0
-  
   // 通知父组件lockTime变化
   handleLockTimeChange()
-
   // 清空后仅关闭面板，不回填当前时间
   isPanelShow.value = false
   isFocused.value = false
@@ -583,16 +569,14 @@ document.addEventListener('click', (e) => {
   }
 })
 
-// 设置默认时间（1小时后）
+// 设置默认时间（当前时间）
 const setDefaultTime = () => {
   const now = new Date()
-  const defaultTime = new Date(now.getTime() + 60 * 60 * 1000) // 1小时后
-  
+  const defaultTime = now
   selectedDate.value = defaultTime
   selectedHour.value = defaultTime.getHours()
   selectedMinute.value = defaultTime.getMinutes()
   selectedSecond.value = defaultTime.getSeconds()
-  
   updateDisplayTime()
   calculateBlockHeight()
   handleLockTimeChange()

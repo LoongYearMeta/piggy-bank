@@ -251,14 +251,6 @@ const freezeTBC = async () => {
   const tbcNumber = formData.depositAmount
   const tbcAmount = Math.ceil(formData.depositAmount * Math.pow(10, 6));
   const lockTime = formData.lockTime
-  
-  console.log('冻结参数:')
-  console.log('tbcNumber:', tbcNumber)
-  console.log('tbcAmount:', tbcAmount)
-  console.log('lockTime:', lockTime)
-  console.log('curAddress:', curAddress.value)
-  console.log('curBlockHeight:', curBlockHeight.value)
-  
   try {
     // 参数校验
     if (!curAddress.value) throw new Error("钱包地址未获取");
@@ -273,39 +265,17 @@ const freezeTBC = async () => {
     const txraws: string[] = [] // 未签名交易
     // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
     const utxos = await API.getUTXOs(curAddress.value, tbcNumber + 0.1, network)
-    console.log('获取到的UTXOs:', utxos)
     if (!utxos || utxos.length === 0) throw new Error("无可用UTXO支付手续费");
-    
-    // 检查UTXO数据结构
-    utxos.forEach((utxo, index) => {
-      console.log(`UTXO ${index}:`, {
-        txId: utxo.txId,
-        outputIndex: utxo.outputIndex,
-        satoshis: utxo.satoshis,
-        script: utxo.script,
-        address: utxo.address
-      })
-    })
     // 未签名交易
     const freezeTx = piggyBank.freezeTBC(curAddress.value, tbcNumber, lockTime, utxos)
-    console.log('freezeTx:', freezeTx)
     const tx = new tbc.Transaction(freezeTx)
-    console.log('tx:', tx)
     // 交易签名
     const txRaw = tx.uncheckedSerialize()
-    console.log('txRaw:', txRaw)
     txraws.push(txRaw) // 序列化未签名交易
-    
     for(let i=0; i < utxos.length; i++) {
       utxos_satoshis[0]!.push(utxos[i]!.satoshis)
       script_pubkeys[0]!.push(utxos[i]!.script)
     }
-    
-    console.log('签名参数:')
-    console.log('txraws:', txraws)
-    console.log('utxos_satoshis:', utxos_satoshis)
-    console.log('script_pubkeys:', script_pubkeys)
-    
     // 验证参数格式
     if (!Array.isArray(txraws) || txraws.length === 0) {
       throw new Error("txraws 必须是非空数组");
@@ -316,7 +286,6 @@ const freezeTBC = async () => {
     if (!Array.isArray(script_pubkeys) || script_pubkeys.length === 0) {
       throw new Error("script_pubkeys 必须是非空数组");
     }
-    
     // 检查每个数组的第一个元素
     if (!Array.isArray(utxos_satoshis[0]) || utxos_satoshis[0].length === 0) {
       throw new Error("utxos_satoshis[0] 必须是非空数组");
@@ -324,27 +293,26 @@ const freezeTBC = async () => {
     if (!Array.isArray(script_pubkeys[0]) || script_pubkeys[0].length === 0) {
       throw new Error("script_pubkeys[0] 必须是非空数组");
     }
-    
-    console.log('参数验证通过，开始签名...')
-    
+    // console.log('参数验证通过，开始签名...')
     // 对交易进行签名
     const { sigs } = await window.Turing.signTransaction({
       txraws,
       utxos_satoshis,
       script_pubkeys
     })
-    console.log('sigs:', sigs)
     if (!sigs || sigs.length === 0) throw new Error("交易签名失败");
     // 将签名添加到交易中，设置UTXO的解锁脚本
     for(let i = 0; i < utxos.length; i++) {
       tx.setInputScript({ inputIndex: i }, () => {
-        const sig = sigs[i]![0]!
+        const sig = sigs[i]![i]!
         const sig_length = (sig.length / 2).toString(16);
         const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16);
         return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString());
       })
     }
-    API.broadcastTXraw(tx.uncheckedSerialize(), network)
+    const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network)
+    if (!res) throw new Error("交易广播失败");
+    // console.log('交易广播成功，冻结成功，交易ID：', res)
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
     console.error('冻结交易异常:', errMsg);
