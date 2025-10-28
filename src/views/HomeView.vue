@@ -294,7 +294,7 @@ const freezeTBC = async () => {
       script_pubkeys
     })
     console.log('sigs:', sigs)
-    // if (!sigs || sigs.length === 0) throw new Error("交易签名失败");
+    if (!sigs || sigs.length === 0) throw new Error("交易签名失败");
     // 将签名添加到交易中，设置UTXO的解锁脚本
     for(let i = 0; i < utxos.length; i++) {
       tx.setInputScript({ inputIndex: i }, () => {
