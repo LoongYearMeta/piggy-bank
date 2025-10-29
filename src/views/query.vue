@@ -452,11 +452,17 @@ const unfreezeAsset = async (asset: any) => {
       script: u.script
     }))
 
+
     // 构造解冻交易-未签名交易
     const unfreezeTx = await piggyBank.unfreezeTBC(curAddress.value, sanitizedUtxos, network)
+
     const tx = new tbc.Transaction(unfreezeTx)
     console.log('解冻交易:', tx)
+    for (let i = 0; i < sanitizedUtxos.length; i++) {
+      tx.setInputSequence(i, 4294967294);
+    }
     const txRaw = tx.uncheckedSerialize()
+
     txraws.push(txRaw) // 序列化未签名交易
 
     // 准备签名数据
@@ -476,6 +482,7 @@ const unfreezeAsset = async (asset: any) => {
       utxos_satoshis,
       script_pubkeys
     })
+
     // 对交易进行签名（兼容新旧钱包返回：优先 sigs，缺失则尝试 sig）
     const signRes: any = await window.Turing.signTransaction({
       txraws,
@@ -514,7 +521,6 @@ const unfreezeAsset = async (asset: any) => {
     for (let i = 0; i < sanitizedUtxos.length; i++) {
       const sig = sigInput[i]
       if (!sig) throw new Error(`交易签名失败：缺少第${i}个输入的签名`)
-      tx.setInputSequence(i, 4294967294);
       tx.setInputScript({ inputIndex: i }, () => {
         const sig_length = (sig.length / 2).toString(16)
         const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16)
