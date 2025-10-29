@@ -56,17 +56,17 @@
         <img src="../assets/empty.svg" class="empty-icon"></img>
         <p>暂无可解冻资产</p>
       </div>
-      
+
       <div v-else class="assets-list">
         <div
-          v-for="asset in unfrozenAssets" 
-          :key="asset.txId + '-' + asset.outputIndex" 
+          v-for="asset in unfrozenAssets"
+          :key="asset.txId + '-' + asset.outputIndex"
           class="asset-card unfrozen-card"
         >
           <div class="asset-header">
             <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} TBC</div>
-            <button 
-              @click="unfreezeAsset(asset)" 
+            <button
+              @click="unfreezeAsset(asset)"
               class="unfreeze-btn"
               :disabled="isUnfreezing"
             >
@@ -75,11 +75,7 @@
           </div>
           <div class="asset-info">
             <div class="info-item">
-              <span class="info-label">冻结时间:</span>
-              <span class="info-value">{{ formatLockTime(asset.lockTime) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">解锁区块:</span>
+              <span class="info-label">冻结时间(区块高度):</span>
               <span class="info-value">{{ asset.lockTime }}</span>
             </div>
           </div>
@@ -94,11 +90,11 @@
         <img src="../assets/empty.svg" class="empty-icon"></img>
         <p>暂无已冻结资产</p>
       </div>
-      
+
       <div v-else class="assets-list">
-        <div 
-          v-for="asset in frozenAssets" 
-          :key="asset.txId + '-' + asset.outputIndex" 
+        <div
+          v-for="asset in frozenAssets"
+          :key="asset.txId + '-' + asset.outputIndex"
           class="asset-card frozen-card"
         >
           <div class="asset-header">
@@ -107,11 +103,7 @@
           </div>
           <div class="asset-info">
             <div class="info-item">
-              <span class="info-label">冻结时间:</span>
-              <span class="info-value">{{ formatLockTime(asset.lockTime) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">解锁区块:</span>
+              <span class="info-label">冻结时间(区块高度):</span>
               <span class="info-value">{{ asset.lockTime }}</span>
             </div>
           </div>
@@ -132,6 +124,7 @@ import { API } from 'tbc-contract'
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
 import * as tbc from "tbc-lib-js";
+// 移除 Buffer 导入，使用原生方法
 
 // 全局变量声明：Turing钱包接口
 declare global {
@@ -162,6 +155,26 @@ const isUnfreezing = ref(false) // 是否正在解冻
 
 // 其他数据-本地存储
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
+
+// 解码锁定时间-piggbank中的解码函数会报错
+const decodeLockTime = (lockTimeChunk: any): number => {
+  try {
+    // 直接使用 Uint8Array 来解析字节数据
+    const bytes = new Uint8Array(lockTimeChunk);
+    
+    // 检查是否有足够的字节
+    if (bytes.length < 4) {
+      throw new Error('Insufficient bytes for lockTime');
+    }
+    
+    // 小端序解析 32 位整数
+    return (bytes[0] || 0) | ((bytes[1] || 0) << 8) | ((bytes[2] || 0) << 16) | ((bytes[3] || 0) << 24);
+  } catch (error) {
+    console.error('读取锁定时间失败:', error);
+    // 如果解析失败，返回 0
+    return 0;
+  }
+}
 
 // 页面挂载时获取数据
 onMounted(async () => {
@@ -219,7 +232,6 @@ const getBlockHeight = async () => {
 // 加载资产数据
 const loadAssets = async () => {
   if (!curAddress.value) return
-  
   try {
     errorMessage.value = ''
     // 获取已冻结的TBC余额
@@ -230,16 +242,26 @@ const loadAssets = async () => {
     const frozenList = await API.fetchFrozenUTXOList(curAddress.value, network)
     console.log('已冻结资产:', frozenList)
     frozenAssets.value = frozenList || []
-    
+    // 解码锁定时间
+    const utxo = frozenList[0]!
+    if (utxo.script!.length != 106) {
+          throw new Error("Invalid Piggy Bank script");
+      }
+        const script = tbc.Script.fromString(utxo.script);
+        const lockTimeChunk = script.chunks![script.chunks!.length - 8]!.buf;
+        console.log('lockTimeChunk 长度:', lockTimeChunk.length);
+        console.log('lockTimeChunk 类型:', typeof lockTimeChunk);
+        console.log('lockTimeChunk 内容:', lockTimeChunk);
+        // 使用通用函数解码锁定时间
+        const lockTime = decodeLockTime(lockTimeChunk);
+        console.log('锁定时间:', lockTime)
     // 获取可解冻的UTXO列表
     // const unfrozenList = await API.fetchUnfrozenUTXOList(curAddress.value, network)
     // console.log('可解冻资产:', unfrozenList)
     // unfrozenAssets.value = unfrozenList || []
-    
     // 计算总额
-    frozenTotal.value = frozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
-    unfrozenTotal.value = unfrozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
-    
+    // frozenTotal.value = frozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
+    // unfrozenTotal.value = unfrozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
     console.log('已冻结资产:', frozenAssets.value)
     console.log('可解冻资产:', unfrozenAssets.value)
   } catch (error) {
@@ -251,33 +273,26 @@ const loadAssets = async () => {
 // 解冻资产
 const unfreezeAsset = async (asset: any) => {
   if (isUnfreezing.value) return
-  
   try {
     isUnfreezing.value = true
     errorMessage.value = ''
-    
     // 获取公钥
     const { tbcPubKey } = await window.Turing.getPubKey()
     const publicKey = new tbc.PublicKey(tbcPubKey)
-    
     // 构造解冻交易
     const unfreezeTx = await piggyBank.unfreezeTBC(curAddress.value, [asset], network)
     const tx = new tbc.Transaction(unfreezeTx)
-    
     // 准备签名参数
     const utxos_satoshis: number[][] = [[asset.satoshis]]
     const script_pubkeys: string[][] = [[asset.script]]
     const txraws: string[] = [tx.uncheckedSerialize()]
-    
     // 对交易进行签名
     const { sigs } = await window.Turing.signTransaction({
       txraws,
       utxos_satoshis,
       script_pubkeys
     })
-    
     if (!sigs || sigs.length === 0) throw new Error("交易签名失败")
-    
     // 将签名添加到交易中
     tx.setInputScript({ inputIndex: 0 }, () => {
       const sig = sigs[0]![0]!
@@ -285,13 +300,10 @@ const unfreezeAsset = async (asset: any) => {
       const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16)
       return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString())
     })
-    
     // 广播交易
     await API.broadcastTXraw(tx.uncheckedSerialize(), network)
-    
     // 重新加载资产数据
     await loadAssets()
-    
     alert('解冻成功！')
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error)
@@ -302,19 +314,6 @@ const unfreezeAsset = async (asset: any) => {
   }
 }
 
-// 格式化锁定时间
-const formatLockTime = (lockTime: number) => {
-  const now = new Date()
-  const lockDate = new Date(now.getTime() + (lockTime - curBlockHeight.value) * 10 * 60 * 1000)
-  
-  const year = lockDate.getFullYear()
-  const month = String(lockDate.getMonth() + 1).padStart(2, '0')
-  const day = String(lockDate.getDate()).padStart(2, '0')
-  const hour = String(lockDate.getHours()).padStart(2, '0')
-  const minute = String(lockDate.getMinutes()).padStart(2, '0')
-  
-  return `${year}-${month}-${day} ${hour}:${minute}`
-}
 </script>
 
 <style scoped>
