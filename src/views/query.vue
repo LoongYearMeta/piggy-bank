@@ -716,6 +716,10 @@ const unfreezeAsset = async (asset: any) => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 20px; /* 加大卡片间距 */
+  /* 自定义滚动条（不受浏览器主题影响） */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #a8ccff #ffffff; /* thumb track */
+  overscroll-behavior: contain;
 }
 
 .asset-card {

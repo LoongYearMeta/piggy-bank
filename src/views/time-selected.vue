@@ -295,7 +295,7 @@ select {
   z-index: 1000;
   /* 自定义滚动条（不受浏览器主题影响） */
   scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #a8ccff #eef5ff; /* thumb track */
+  scrollbar-color: #a8ccff #ffffff; /* thumb track */
   overscroll-behavior: contain;
 }
 
