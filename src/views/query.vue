@@ -231,7 +231,7 @@ const blockHeightToDate = (blockHeight: number): string => {
     
     // 如果目标区块高度小于等于当前区块高度，说明已到期
     if (blockHeight <= currentBlockHeight) {
-      return '已到期'
+      return t('already_matured')
     }
     
     // 计算区块高度差值
