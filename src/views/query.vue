@@ -1,11 +1,11 @@
 <template>
-  <div class="query-container">
+  <div class="page-container">
     <!-- 顶部导航 -->
-    <header class="header">
-      <router-link to="/" class="back-btn">
+    <header class="page-header">
+      <router-link to="/" class="btn btn--pill">
         {{ t('back') }}
       </router-link>
-      <h1 class="title">{{ t('details_title') }}</h1>
+      <h1 class="page-title">{{ t('details_title') }}</h1>
       <div class="placeholder" style="display:flex; gap:10px; align-items:center;">
         <button type="button" class="lang-btn" @click="toggleLocale">
           <span class="lang-text">{{ locale === 'zh' ? '中文' : 'English' }}</span>
@@ -15,26 +15,29 @@
     </header>
 
     <!-- 钱包信息区域 -->
-    <div class="wallet-section">
+    <div class="card wallet-section">
       <template v-if="curAddress">
         <div class="form-group">
-          <label>{{ t('current_address') }}</label>
+          <label class="form-label">{{ t('current_address') }}</label>
           <input
             v-model="curAddress"
+            class="input"
             disabled
           />
         </div>
         <div class="form-group">
-          <label>{{ t('current_balance') }}</label>
+          <label class="form-label">{{ t('current_balance') }}</label>
           <input
             v-model="tbcBalance"
+            class="input"
             disabled
           />
         </div>
         <div class="form-group">
-          <label>{{ t('current_height') }}</label>
+          <label class="form-label">{{ t('current_height') }}</label>
           <input
             v-model="curBlockHeight"
+            class="input"
             disabled
           />
         </div>
@@ -43,7 +46,7 @@
 
     <!-- 加载占位 -->
     <div v-if="isLoading" class="loading-state">
-      <div class="loading-spinner"></div>
+      <div class="spinner"></div>
       <div class="loading-text">{{ t('loading') }}</div>
     </div>
 
@@ -72,7 +75,7 @@
         <p>{{ t('list_unfrozen_empty') }}</p>
       </div>
 
-      <div v-else class="assets-list">
+    <div v-else class="assets-list scrollbar--blue">
         <div
           v-for="asset in unfrozenAssets"
           :key="asset.txId + '-' + asset.outputIndex"
@@ -117,7 +120,7 @@
         <p>{{ t('list_frozen_empty') }}</p>
       </div>
 
-      <div v-else class="assets-list">
+    <div v-else class="assets-list scrollbar--blue">
         <div
           v-for="asset in frozenAssets"
           :key="asset.txId + '-' + asset.outputIndex"
@@ -547,21 +550,21 @@ const unfreezeAsset = async (asset: any) => {
 </script>
 
 <style scoped>
+/* 全局基础样式 */
 input,
 button,
 select {
   border: none;
   outline: none;
-  /* border: 1px solid transparent; */
+  border: 1px solid transparent;
 }
-/* 全局基础样式 */
 :deep(body) {
-  background-color: #f5f7fa;
+  background-color: #f5f7fa; /* 固定浅色基础背景，不继承浏览器主题 */
   min-height: 100vh;
   margin: 0;
-  padding: 25px; /* 加大页面内边距 */
+  padding: 20px;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; /* 统一字体 */
 }
 
 /* 全局容器样式 */
@@ -922,36 +925,7 @@ select {
 }
 
 /* 成功提示样式 */
-.success-message {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #51cf66;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
-  z-index: 1000;
-  max-width: 300px;
-}
-
-/* 错误提示样式 */
-.error-message {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #ff4d4f;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
-  z-index: 1000;
-  max-width: 300px;
-}
+/* success/error toasts moved to src/style.css (.toast-success/.toast-error). Keep per-item error below. */
 
 /* 成功提示动画 */
 .success-fade-enter-from {
@@ -1037,41 +1011,8 @@ select {
   color: #666;
 }
 
-.loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(0,0,0,0.1);
-  border-top-color: #409eff;
-  border-radius: 50%;
-  margin: 0 auto 10px;
-  animation: spin 0.8s linear infinite;
-}
-
 .loading-text {
   margin-bottom: 10px;
-}
-
-@keyframes shimmer {
-  100% { transform: translateX(100%); }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 内容淡入动画 */
-.content-fade-enter-from {
-  opacity: 0;
-  transform: translateY(6px);
-}
-
-.content-fade-enter-active {
-  transition: all 220ms ease;
-}
-
-.content-fade-enter-to {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 /* 移动端响应式适配 */

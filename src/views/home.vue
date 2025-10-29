@@ -375,13 +375,12 @@ const handleDeposit = () => {
 </script>
 
 <style scoped>
-/* 全局基础样式 */
 input,
 button,
 select {
   border: none;
   outline: none;
-  /* border: 1px solid transparent; */
+  border: 1px solid transparent;
 }
 :deep(body) {
   background-color: #f5f7fa; /* 固定浅色基础背景，不继承浏览器主题 */
@@ -741,73 +740,7 @@ select {
 }
 
 /* 顶部右侧全局提示样式，与 query.vue 对齐 */
-.toast-success {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #51cf66;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
-  z-index: 1000;
-  max-width: 300px;
-}
-
-.toast-error {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #ff4d4f;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
-  z-index: 1000;
-  max-width: 300px;
-}
-
-.toast-success-fade-enter-from {
-  opacity: 0;
-  transform: translateX(100px);
-}
-.toast-success-fade-enter-active { transition: all 0.3s ease; }
-.toast-success-fade-enter-to {
-  opacity: 1;
-  transform: translateX(0);
-}
-.toast-success-fade-leave-from {
-  opacity: 1;
-  transform: translateX(0);
-}
-.toast-success-fade-leave-active { transition: all 0.3s ease; }
-.toast-success-fade-leave-to {
-  opacity: 0;
-  transform: translateX(100px);
-}
-
-.toast-error-fade-enter-from {
-  opacity: 0;
-  transform: translateX(100px);
-}
-.toast-error-fade-enter-active { transition: all 0.3s ease; }
-.toast-error-fade-enter-to {
-  opacity: 1;
-  transform: translateX(0);
-}
-.toast-error-fade-leave-from {
-  opacity: 1;
-  transform: translateX(0);
-}
-.toast-error-fade-leave-active { transition: all 0.3s ease; }
-.toast-error-fade-leave-to {
-  opacity: 0;
-  transform: translateX(100px);
-}
+/* toast styles moved to src/style.css */
 
 .error-input {
   border: 1px solid #ff4d4f !important;
