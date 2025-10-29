@@ -55,10 +55,10 @@
           </Transition>
         </div>
         <div class="form-group">
-          <!-- 自定义时间选择器 -->
-          <TimePicker
-            ref="timePicker"
-            :currentBlockHeight="curBlockHeight"
+          <!-- 新的期限选择组件（旧组件保留不动） -->
+          <TimeSelected
+            :address="curAddress"
+            :network="network"
             @update:lockTime="handleLockTimeChange"
           />
           <Transition name="error-fade">
@@ -79,6 +79,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
 import TimePicker from './time-picker.vue'
+import TimeSelected from './time-selected.vue'
 import { API } from 'tbc-contract'
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
@@ -349,6 +350,13 @@ const handleDeposit = () => {
 
 <style scoped>
 /* 全局基础样式 */
+input,
+button,
+select {
+  border: none;
+  outline: none;
+  /* border: 1px solid transparent; */
+}
 :deep(body) {
   background-color: #f5f7fa; /* 固定浅色基础背景，不继承浏览器主题 */
   min-height: 100vh;

@@ -458,9 +458,11 @@ const unfreezeAsset = async (asset: any) => {
     
     utxos_satoshis.push(satoshis)
     script_pubkeys.push(scripts)
-    // console.log('utxos_satoshis:', utxos_satoshis)
-    // console.log('script_pubkeys:', script_pubkeys)
-    // console.log('txraws:', txraws)
+    console.log('sigObj:', {
+      txraws,
+      utxos_satoshis,
+      script_pubkeys
+    })
     // 对交易进行签名（兼容新旧钱包返回：优先 sigs，缺失则尝试 sig）
     const signRes: any = await window.Turing.signTransaction({
       txraws,
@@ -468,7 +470,7 @@ const unfreezeAsset = async (asset: any) => {
       script_pubkeys
     })
     
-    // console.log('签名结果:', signRes)
+    console.log('签名结果:', signRes)
     
     let sigInput: string[] = []
     try {
@@ -494,12 +496,12 @@ const unfreezeAsset = async (asset: any) => {
     } catch (e) {
       throw new Error(`交易签名失败：${e instanceof Error ? e.message : '未获取到有效签名'}`)
     }
-    
+    console.log('sigInput:', sigInput)
     // 将签名添加到交易中，设置UTXO的解锁脚本
     for (let i = 0; i < sanitizedUtxos.length; i++) {
       const sig = sigInput[i]
       if (!sig) throw new Error(`交易签名失败：缺少第${i}个输入的签名`)
-      
+      tx.setInputSequence(i, 4294967294);
       tx.setInputScript({ inputIndex: i }, () => {
         const sig_length = (sig.length / 2).toString(16)
         const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16)
