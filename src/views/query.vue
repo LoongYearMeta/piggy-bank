@@ -228,11 +228,10 @@ const blockHeightToDate = (blockHeight: number): string => {
     // 获取当前区块高度和当前时间
     const currentBlockHeight = curBlockHeight.value;
     const currentTime = new Date();
-    let flag = false
     
     // 如果目标区块高度小于等于当前区块高度，说明已到期
     if (blockHeight <= currentBlockHeight) {
-      flag = true
+      return '已到期'
     }
     
     // 计算区块高度差值
@@ -245,7 +244,8 @@ const blockHeightToDate = (blockHeight: number): string => {
     const timeDifferenceMs = blockDifference * blockTimeMinutes * 60 * 1000;
     
     // 计算目标时间 = 当前时间 + 时间差
-    const targetTime = flag ? new Date(currentTime.getTime() - timeDifferenceMs) : new Date(currentTime.getTime() + timeDifferenceMs);
+    const targetTime = new Date(currentTime.getTime() + timeDifferenceMs);
+
     
     // 设置为当天的0点
     const targetDate = new Date(targetTime.getFullYear(), targetTime.getMonth(), targetTime.getDate());
