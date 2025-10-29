@@ -36,8 +36,15 @@
       </template>
     </div>
 
+    <!-- 加载占位 -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">数据加载中...</div>
+    </div>
+
     <!-- 资产统计概览 -->
-    <div class="stats-section">
+    <Transition name="content-fade">
+    <div v-if="!isLoading" class="stats-section">
       <div class="stat-card frozen">
         <div class="stat-value">{{ frozenTotal }}</div>
         <div class="stat-label">已存储未到期资产总额 (TBC)</div>
@@ -47,9 +54,11 @@
         <div class="stat-label">存储到期可提取资产总额 (TBC)</div>
       </div>
     </div>
+    </Transition>
 
     <!-- 可解冻资产列表 -->
-    <div class="unfrozen-section">
+    <Transition name="content-fade">
+    <div v-if="!isLoading" class="unfrozen-section">
       <h2 class="section-title">存储到期可提取资产</h2>
       <p class="section-description">存储到期时间以区块高度为准</p>
       <div v-if="unfrozenAssets.length === 0" class="empty-state">
@@ -91,9 +100,11 @@
         </div>
       </div>
     </div>
+    </Transition>
 
     <!-- 已冻结资产列表 -->
-    <div class="frozen-section">
+    <Transition name="content-fade">
+    <div v-if="!isLoading" class="frozen-section">
       <h2 class="section-title">已存储未到期资产</h2>
       <p class="section-description">存储到期时间以区块高度为准</p>
       <div v-if="frozenAssets.length === 0" class="empty-state">
@@ -128,6 +139,7 @@
         </div>
       </div>
     </div>
+    </Transition>
 
     <!-- 成功提示 -->
     <Transition name="success-fade">
@@ -176,6 +188,7 @@ const unfrozenTotal = ref(0) // 可解冻总额
 const errorMessage = ref('') // 错误信息
 const successMessage = ref('') // 成功信息
 const isUnfreezing = ref(false) // 是否正在解冻
+const isLoading = ref(true) // 是否在加载数据
 
 // 其他数据-本地存储
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
@@ -315,6 +328,7 @@ const getBlockHeight = async () => {
 const loadAssets = async () => {
   if (!curAddress.value) return
   try {
+    isLoading.value = true
     errorMessage.value = ''
     // 获取已冻结的TBC余额
     frozenTotal.value = await API.fetchFrozenTBCBalance(curAddress.value, network)
@@ -322,7 +336,7 @@ const loadAssets = async () => {
 
     // 获取已冻结的UTXO列表
     const frozenList = await API.fetchFrozenUTXOList(curAddress.value, network)
-    // console.log('原始已冻结资产:', frozenList)
+    console.log('原始已冻结资产:', frozenList)
     
     // 解码锁定时间并构建新的资产数据结构
     const processedFrozenAssets: any[] = []
@@ -389,11 +403,15 @@ const loadAssets = async () => {
     // console.error('加载资产失败:', error)
     errorMessage.value = '加载资产失败'
   }
+  finally {
+    isLoading.value = false
+  }
 }
 
 // 构造解冻资产交易-【冻结---存入】-【解冻---提取】
 const unfreezeAsset = async (asset: any) => {
   console.log('asset:', asset)
+  
   if (isUnfreezing.value) return
   try {
     isUnfreezing.value = true
@@ -401,6 +419,7 @@ const unfreezeAsset = async (asset: any) => {
     
     // 确保 utxo 是列表【数组】
     const utxos = Array.isArray(asset) ? asset : [asset]
+
     console.log('utxos:', utxos)
     
     // 获取公钥
@@ -412,8 +431,16 @@ const unfreezeAsset = async (asset: any) => {
     const script_pubkeys: string[][] = []
     const txraws: string[] = [] // 未签名交易
     
+    // 仅传递必要字段，剥离 lockTime / isUnfrozen 等展示字段
+    const sanitizedUtxos = utxos.map((u: any) => ({
+      txId: u.txId,
+      outputIndex: u.outputIndex,
+      satoshis: u.satoshis,
+      script: u.script
+    }))
+
     // 构造解冻交易-未签名交易
-    const unfreezeTx = await piggyBank.unfreezeTBC(curAddress.value, utxos, network)
+    const unfreezeTx = await piggyBank.unfreezeTBC(curAddress.value, sanitizedUtxos, network)
     const tx = new tbc.Transaction(unfreezeTx)
     console.log('解冻交易:', tx)
     const txRaw = tx.uncheckedSerialize()
@@ -423,9 +450,10 @@ const unfreezeAsset = async (asset: any) => {
     const satoshis: number[] = []
     const scripts: string[] = []
     
-    for(let i = 0; i < utxos.length; i++) {
-      satoshis.push(utxos[i].satoshis)
-      scripts.push(utxos[i].script)
+    for(let i = 0; i < sanitizedUtxos.length; i++) {
+      const u = sanitizedUtxos[i] as any
+      satoshis.push(u?.satoshis || 0)
+      scripts.push(u?.script || '')
     }
     
     utxos_satoshis.push(satoshis)
@@ -460,15 +488,15 @@ const unfreezeAsset = async (asset: any) => {
       }
       
       // 检查签名数量是否与UTXO数量匹配
-      if (sigInput.length !== utxos.length) {
-        throw new Error(`签名数量不匹配：期望${utxos.length}个，实际${sigInput.length}个`)
+      if (sigInput.length !== sanitizedUtxos.length) {
+        throw new Error(`签名数量不匹配：期望${sanitizedUtxos.length}个，实际${sigInput.length}个`)
       }
     } catch (e) {
       throw new Error(`交易签名失败：${e instanceof Error ? e.message : '未获取到有效签名'}`)
     }
     
     // 将签名添加到交易中，设置UTXO的解锁脚本
-    for (let i = 0; i < utxos.length; i++) {
+    for (let i = 0; i < sanitizedUtxos.length; i++) {
       const sig = sigInput[i]
       if (!sig) throw new Error(`交易签名失败：缺少第${i}个输入的签名`)
       
@@ -912,6 +940,50 @@ const unfreezeAsset = async (asset: any) => {
 
 .assets-list::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.5);
+}
+
+/* 加载样式 */
+.loading-state {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-top-color: #409eff;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  margin-bottom: 10px;
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 内容淡入动画 */
+.content-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.content-fade-enter-active {
+  transition: all 220ms ease;
+}
+
+.content-fade-enter-to {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* 移动端响应式适配 */
