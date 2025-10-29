@@ -80,6 +80,13 @@
       </form>
     </div>
   </div>
+  <!-- 全局提示 -->
+  <Transition name="toast-success-fade">
+    <div class="toast-success" v-if="successMessage">{{ successMessage }}</div>
+  </Transition>
+  <Transition name="toast-error-fade">
+    <div class="toast-error" v-if="errorMessage">{{ errorMessage }}</div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -135,6 +142,8 @@ const errors = reactive<Errors>({ // 错误提示
 
 // 提交阶段统一错误
 const submitError = ref('')
+const successMessage = ref('')
+const errorMessage = ref('')
 
 // 时间选择器引用
 const timePicker = ref<InstanceType<typeof TimePicker>>()
@@ -343,11 +352,15 @@ const freezeTBC = async () => {
     // 广播交易
     const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network)
     if (!res) throw new Error("交易广播失败");
-    // console.log('交易广播成功，冻结成功，交易ID：', res)
+    // 冻结成功提示
+    successMessage.value = t('deposit_success')
+    setTimeout(() => (successMessage.value = ''), 3000)
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
     console.error('冻结交易异常:', errMsg);
-    submitError.value = `冻结失败：${errMsg}`
+    submitError.value = `${t('deposit_failed')}\n${errMsg}`
+    errorMessage.value = t('deposit_failed')
+    setTimeout(() => (errorMessage.value = ''), 5000)
   }
 }
 
@@ -725,6 +738,75 @@ select {
   font-size: 0.875rem;
   margin-top: 4px;
   display: block;
+}
+
+/* 顶部右侧全局提示样式，与 query.vue 对齐 */
+.toast-success {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #51cf66;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
+  z-index: 1000;
+  max-width: 300px;
+}
+
+.toast-error {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #ff4d4f;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+  z-index: 1000;
+  max-width: 300px;
+}
+
+.toast-success-fade-enter-from {
+  opacity: 0;
+  transform: translateX(100px);
+}
+.toast-success-fade-enter-active { transition: all 0.3s ease; }
+.toast-success-fade-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+.toast-success-fade-leave-from {
+  opacity: 1;
+  transform: translateX(0);
+}
+.toast-success-fade-leave-active { transition: all 0.3s ease; }
+.toast-success-fade-leave-to {
+  opacity: 0;
+  transform: translateX(100px);
+}
+
+.toast-error-fade-enter-from {
+  opacity: 0;
+  transform: translateX(100px);
+}
+.toast-error-fade-enter-active { transition: all 0.3s ease; }
+.toast-error-fade-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+.toast-error-fade-leave-from {
+  opacity: 1;
+  transform: translateX(0);
+}
+.toast-error-fade-leave-active { transition: all 0.3s ease; }
+.toast-error-fade-leave-to {
+  opacity: 0;
+  transform: translateX(100px);
 }
 
 .error-input {
