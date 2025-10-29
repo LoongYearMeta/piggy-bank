@@ -1,11 +1,11 @@
 <template>
   <div class="time-selected">
     <div class="form-group">
-      <label class="label">存储期限</label>
+      <label class="label">{{ t('time_term') }}</label>
       <!-- 触发按钮（淡蓝色），点击后弹出选项面板，按钮上回显选择结果 -->
       <div class="select-trigger" ref="triggerRef">
         <button type="button" class="trigger-btn" @click="togglePanel" :aria-expanded="isOpen">
-          <span>{{ selectedLabel }}</span>
+          <span>{{ selectedLabel || t('please_select_term') }}</span>
           <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6-6-6z"/>
           </svg>
@@ -22,7 +22,7 @@
               :aria-selected="opt.key === selectedKey"
               role="option"
             >
-              {{ opt.label }}
+              {{ labelFor(opt.key) }}
             </button>
           </div>
         </Transition>
@@ -31,11 +31,11 @@
 
     <div class="row preview" v-if="selectedKey">
       <div class="preview-item">
-        <span class="preview-label">到期日期</span>
+        <span class="preview-label">{{ t('due_date') }}</span>
         <span class="preview-value">{{ dueDateStr }}</span>
       </div>
       <div class="preview-item">
-        <span class="preview-label">到期区块高度</span>
+        <span class="preview-label">{{ t('due_height') }}</span>
         <span class="preview-value">{{ lockBlockHeight }}</span>
       </div>
     </div>
@@ -44,6 +44,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, nextTick, ref, watch } from 'vue'
+import { t } from '../i18n'
 import { API } from 'tbc-contract'
 
 // props: 接收父组件当前地址与网络（与旧组件保持一致的依赖来源）
@@ -59,17 +60,17 @@ const emit = defineEmits<{
 }>()
 
 const options = [
-  { key: '1d', label: '1天', days: 1 },
-  { key: '1w', label: '1周', days: 7 },
-  { key: '1m', label: '1个月', months: 1 },
-  { key: '3m', label: '3个月', months: 3 },
-  { key: '6m', label: '6个月', months: 6 },
-  { key: '1y', label: '1年', years: 1 },
-  { key: '2y', label: '2年', years: 2 },
-  { key: '3y', label: '3年', years: 3 },
-  { key: '5y', label: '5年', years: 5 },
-  { key: '10y', label: '10年', years: 10 },
-  { key: '20y', label: '20年', years: 20 }
+  { key: '1d', days: 1 },
+  { key: '1w', days: 7 },
+  { key: '1m', months: 1 },
+  { key: '3m', months: 3 },
+  { key: '6m', months: 6 },
+  { key: '1y', years: 1 },
+  { key: '2y', years: 2 },
+  { key: '3y', years: 3 },
+  { key: '5y', years: 5 },
+  { key: '10y', years: 10 },
+  { key: '20y', years: 20 }
 ]
 
 const selectedKey = ref<string>('')
@@ -108,8 +109,25 @@ function pickAndClose(key: string) {
 
 const selectedLabel = computed(() => {
   const opt = options.find(o => o.key === selectedKey.value)
-  return opt ? opt.label : '请选择存储期限'
+  return opt ? labelFor(opt.key) : ''
 })
+
+function labelFor(key: string) {
+  const map: Record<string, string> = {
+    '1d': t('term_1d'),
+    '1w': t('term_1w'),
+    '1m': t('term_1m'),
+    '3m': t('term_3m'),
+    '6m': t('term_6m'),
+    '1y': t('term_1y'),
+    '2y': t('term_2y'),
+    '3y': t('term_3y'),
+    '5y': t('term_5y'),
+    '10y': t('term_10y'),
+    '20y': t('term_20y'),
+  }
+  return map[key] ?? key
+}
 
 function togglePanel() {
   isOpen.value = !isOpen.value

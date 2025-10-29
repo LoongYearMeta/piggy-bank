@@ -2,10 +2,16 @@
   <div class="home-container">
     <!-- 顶部导航 -->
     <header class="header">
-      <h1 class="title">存钱罐</h1>
-      <router-link to="/query" class="query-btn">
-        存储明细
-      </router-link>
+      <h1 class="title">{{ t('app_title') }}</h1>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button type="button" class="lang-btn" @click="toggleLocale">
+          <span class="lang-text">{{ locale === 'zh' ? '中文' : 'English' }}</span>
+          <span class="lang-dot" />
+        </button>
+        <router-link to="/query" class="query-btn">
+          {{ t('nav_details') }}
+        </router-link>
+      </div>
     </header>
     <!-- logo图片 -->
     <img src="../assets/piggy-bank.svg" alt="piggy-bank" class="piggy-bank-img">
@@ -16,21 +22,21 @@
       <!-- 当前钱包地址 -->
       <template v-if="curAddress">
         <div class="form-group">
-          <label>当前钱包地址</label>
+          <label>{{ t('current_address') }}</label>
           <input
             v-model="curAddress"
             disabled
           />
         </div>
         <div class="form-group">
-          <label>当前钱包余额(TBC)</label>
+          <label>{{ t('current_balance') }}</label>
           <input
             v-model="tbcBalance"
             disabled
           />
         </div>
         <div class="form-group">
-          <label>当前区块高度</label>
+          <label>{{ t('current_height') }}</label>
           <input
             v-model="curBlockHeight"
             disabled
@@ -38,16 +44,16 @@
         </div>
       </template>
       <!-- 冻结资产表单 -->
-      <h2 class="title">存入资产</h2>
+      <h2 class="title">{{ t('deposit_section') }}</h2>
       <form @submit.prevent="handleDeposit" class="deposit-form">
         <!-- 冻结金额 -->
         <div class="form-group">
-          <label for="amount">金额 (TBC)</label>
+          <label for="amount">{{ t('amount_label') }}</label>
           <input
             :class="errors.amountTip ? 'error-input' : ''"
             id="amount"
             v-model.number="formData.depositAmount"
-            placeholder="请输入存入金额"
+            :placeholder="t('input_amount_placeholder')"
             @input="validateAmount"
           />
           <Transition name="error-fade">
@@ -69,7 +75,7 @@
           <span class="error-message" v-if="submitError">{{ submitError }}</span>
         </Transition>
         <button type="submit" class="deposit-btn" :disabled="!formData.depositAmount || formData.depositAmount <= 0">
-          存入
+          {{ t('submit_deposit') }}
         </button>
       </form>
     </div>
@@ -80,6 +86,7 @@
 import { ref, reactive, watch, onMounted } from 'vue'
 import TimePicker from './time-picker.vue'
 import TimeSelected from './time-selected.vue'
+import { t, locale as localeRef, setLocale } from '../i18n'
 import { API } from 'tbc-contract'
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
@@ -132,6 +139,12 @@ const submitError = ref('')
 // 时间选择器引用
 const timePicker = ref<InstanceType<typeof TimePicker>>()
 
+const locale = localeRef
+
+function toggleLocale() {
+  setLocale(locale.value === 'zh' ? 'en' : 'zh')
+}
+
 // 页面挂载时获取数据
 onMounted(async () => {
   // 钱包数据初始化
@@ -169,18 +182,18 @@ const validateAmount = (): boolean => {
   const depositAmount = formData.depositAmount
   // 非空校验
   if (!depositAmount) {
-    errors.amountTip = '请输入冻结金额'
+    errors.amountTip = t('err_enter_amount')
     return false
   }
   // 正则校验
   const amountStr = depositAmount.toString()
   if (!Regex.freezeAmountReg.test(amountStr)) {
-    errors.amountTip = '请输入正小数且最多精确到小数点后6位'
+    errors.amountTip = t('err_amount_format')
     return false
   }
   // 金额校验
   if (depositAmount > tbcBalance.value) {
-    errors.amountTip = '冻结金额不能大于钱包余额'
+    errors.amountTip = t('err_amount_exceed_balance')
     return false
   }
   return true
@@ -192,12 +205,12 @@ const validateLockTime = (): boolean => {
   const lockTime = formData.lockTime
   // 检查是否选择了冻结时间
   if (!lockTime) {
-    errors.timeTip = '请选择冻结时间'
+    errors.timeTip = t('err_select_time')
     return false
   }
   // 校验时间选择器的有效性
   if (timePicker.value && !timePicker.value.validateTime()) {
-    errors.timeTip = '请选择有效的冻结时间'
+    errors.timeTip = t('err_invalid_time')
     return false
   }
   return true
@@ -213,7 +226,7 @@ const getWalletData = async () => {
 // 获取钱包地址
 const getAddress = async () => {
   if (!window.Turing) {
-    alert('请先安装Turing钱包')
+    alert(t('need_wallet_install'))
     return
   }
   try {
@@ -402,6 +415,62 @@ select {
 .query-btn:hover {
   background: #a2d0fa;
   transform: translateY(-2px);
+}
+
+.lang-select {
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #3d3c63;
+  font-size: 14px;
+  padding: 0 8px;
+}
+
+/* 语言切换按钮样式与动画 */
+.lang-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #3d3c63;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.lang-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  border-color: #d7e6fb;
+}
+
+.lang-btn:active {
+  transform: translateY(0);
+}
+
+.lang-text {
+  font-weight: 600;
+}
+
+.lang-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #409eff;
+  display: inline-block;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.35); opacity: 0.6; }
 }
 
 /* 存钱罐图片 */

@@ -3,31 +3,36 @@
     <!-- 顶部导航 -->
     <header class="header">
       <router-link to="/" class="back-btn">
-        返回
+        {{ t('back') }}
       </router-link>
-      <h1 class="title">存储明细</h1>
-      <div class="placeholder"></div>
+      <h1 class="title">{{ t('details_title') }}</h1>
+      <div class="placeholder" style="display:flex; gap:10px; align-items:center;">
+        <button type="button" class="lang-btn" @click="toggleLocale">
+          <span class="lang-text">{{ locale === 'zh' ? '中文' : 'English' }}</span>
+          <span class="lang-dot" />
+        </button>
+      </div>
     </header>
 
     <!-- 钱包信息区域 -->
     <div class="wallet-section">
       <template v-if="curAddress">
         <div class="form-group">
-          <label>当前钱包地址</label>
+          <label>{{ t('current_address') }}</label>
           <input
             v-model="curAddress"
             disabled
           />
         </div>
         <div class="form-group">
-          <label>当前钱包余额(TBC)</label>
+          <label>{{ t('current_balance') }}</label>
           <input
             v-model="tbcBalance"
             disabled
           />
         </div>
         <div class="form-group">
-          <label>当前区块高度</label>
+          <label>{{ t('current_height') }}</label>
           <input
             v-model="curBlockHeight"
             disabled
@@ -39,7 +44,7 @@
     <!-- 加载占位 -->
     <div v-if="isLoading" class="loading-state">
       <div class="loading-spinner"></div>
-      <div class="loading-text">数据加载中...</div>
+      <div class="loading-text">{{ t('loading') }}</div>
     </div>
 
     <!-- 资产统计概览 -->
@@ -47,11 +52,11 @@
     <div v-if="!isLoading" class="stats-section">
       <div class="stat-card frozen">
         <div class="stat-value">{{ frozenTotal }}</div>
-        <div class="stat-label">已存储未到期资产总额 (TBC)</div>
+        <div class="stat-label">{{ t('stats_frozen_total') }}</div>
       </div>
       <div class="stat-card unfrozen">
         <div class="stat-value">{{ unfrozenTotal }}</div>
-        <div class="stat-label">存储到期可提取资产总额 (TBC)</div>
+        <div class="stat-label">{{ t('stats_unfrozen_total') }}</div>
       </div>
     </div>
     </Transition>
@@ -59,12 +64,12 @@
     <!-- 可解冻资产列表 -->
     <Transition name="content-fade">
     <div v-if="!isLoading" class="unfrozen-section">
-      <h2 class="section-title">存储到期可提取资产</h2>
-      <p class="section-description">存储到期时间以区块高度为准</p>
+      <h2 class="section-title">{{ t('list_unfrozen_title') }}</h2>
+      <p class="section-description">{{ t('tip_storage_term') }}</p>
       <div v-if="unfrozenAssets.length === 0" class="empty-state">
         <!-- <div class="empty-icon">🔒</div> -->
         <img src="../assets/empty.svg" class="empty-icon"></img>
-        <p>暂无可提取资产</p>
+        <p>{{ t('list_unfrozen_empty') }}</p>
       </div>
 
       <div v-else class="assets-list">
@@ -74,26 +79,26 @@
           class="asset-card unfrozen-card"
         >
           <div class="asset-header">
-            <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} TBC</div>
+            <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} {{ t('amount_tbc') }}</div>
             <button
               @click="unfreezeAsset(asset)"
               class="unfreeze-btn"
               :disabled="isUnfreezing"
             >
-              {{ isUnfreezing ? '提取中...' : '提取' }}
+              {{ isUnfreezing ? t('extracting') : t('withdraw') }}
             </button>
           </div>
           <div class="asset-info">
             <div class="info-item">
-              <span class="info-label">存储到期时间:</span>
+              <span class="info-label">{{ t('info_storage_term') }}:</span>
               <span class="info-value">{{ asset.lockTime ? blockHeightToDate(asset.lockTime) : '解码失败' }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">区块高度:</span>
+              <span class="info-label">{{ t('info_block_height') }}:</span>
               <span class="info-value">{{ asset.lockTime || '解码失败' }}</span>
             </div>
             <div v-if="asset.decodeError" class="info-item error">
-              <span class="info-label">解码错误:</span>
+              <span class="info-label">{{ t('decode_error') }}:</span>
               <span class="info-value">{{ asset.decodeError }}</span>
             </div>
           </div>
@@ -105,11 +110,11 @@
     <!-- 已冻结资产列表 -->
     <Transition name="content-fade">
     <div v-if="!isLoading" class="frozen-section">
-      <h2 class="section-title">已存储未到期资产</h2>
-      <p class="section-description">存储到期时间以区块高度为准</p>
+      <h2 class="section-title">{{ t('list_frozen_title') }}</h2>
+      <p class="section-description">{{ t('tip_storage_term') }}</p>
       <div v-if="frozenAssets.length === 0" class="empty-state">
         <img src="../assets/empty.svg" class="empty-icon"></img>
-        <p>暂无已存储资产</p>
+        <p>{{ t('list_frozen_empty') }}</p>
       </div>
 
       <div v-else class="assets-list">
@@ -120,19 +125,19 @@
         >
           <div class="asset-header">
             <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} TBC</div>
-            <div class="status-badge frozen">未到期</div>
+            <div class="status-badge frozen">{{ t('not_matured') }}</div>
           </div>
           <div class="asset-info">
             <div class="info-item">
-              <span class="info-label">存储到期时间:</span>
+              <span class="info-label">{{ t('info_storage_term') }}:</span>
               <span class="info-value">{{ asset.lockTime ? blockHeightToDate(asset.lockTime) : '解码失败' }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">区块高度:</span>
+              <span class="info-label">{{ t('info_block_height') }}:</span>
               <span class="info-value">{{ asset.lockTime || '解码失败' }}</span>
             </div>
             <div v-if="asset.decodeError" class="info-item error">
-              <span class="info-label">解码错误:</span>
+              <span class="info-label">{{ t('decode_error') }}:</span>
               <span class="info-value">{{ asset.decodeError }}</span>
             </div>
           </div>
@@ -159,6 +164,7 @@ import { API } from 'tbc-contract'
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
 import * as tbc from "tbc-lib-js";
+import { t, locale as localeRef, setLocale } from '../i18n'
 // 移除 Buffer 导入，使用原生方法
 
 // 全局变量声明：Turing钱包接口
@@ -189,6 +195,7 @@ const errorMessage = ref('') // 错误信息
 const successMessage = ref('') // 成功信息
 const isUnfreezing = ref(false) // 是否正在解冻
 const isLoading = ref(true) // 是否在加载数据
+const locale = localeRef
 
 // 其他数据-本地存储
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
@@ -287,7 +294,7 @@ const getWalletData = async () => {
 // 获取钱包地址
 const getAddress = async () => {
   if (!window.Turing) {
-    errorMessage.value = '请先安装Turing钱包'
+    errorMessage.value = t('need_wallet_install')
     return
   }
   try {
@@ -297,7 +304,7 @@ const getAddress = async () => {
     curAddress.value = tbcAddress
   } catch (error) {
     console.error('获取钱包地址失败:', error)
-    errorMessage.value = '获取钱包地址失败'
+    errorMessage.value = t('err_get_address')
   }
 }
 
@@ -308,7 +315,7 @@ const getBalance = async () => {
     tbcBalance.value = tbc / 1000000
   } catch (error) {
     console.error('获取钱包余额失败:', error)
-    errorMessage.value = '获取钱包余额失败'
+    errorMessage.value = t('err_get_balance')
   }
 }
 
@@ -320,7 +327,7 @@ const getBlockHeight = async () => {
     // console.log('当前区块高度:', curBlockHeight.value)
   } catch (error) {
     // console.error('获取当前区块高度失败:', error)
-    errorMessage.value = '获取当前区块高度失败'
+    errorMessage.value = t('err_get_height')
   }
 }
 
@@ -401,11 +408,17 @@ const loadAssets = async () => {
     // console.log('可解冻资产:', unfrozenAssets.value)
   } catch (error) {
     // console.error('加载资产失败:', error)
-    errorMessage.value = '加载资产失败'
+    errorMessage.value = t('err_load_assets')
   }
   finally {
     isLoading.value = false
   }
+}
+
+// 旧下拉切换已替换为按钮切换，保留占位避免误用
+
+function toggleLocale() {
+  setLocale(locale.value === 'zh' ? 'en' : 'zh')
 }
 
 // 构造解冻资产交易-【冻结---存入】-【解冻---提取】
@@ -515,11 +528,11 @@ const unfreezeAsset = async (asset: any) => {
     // 重新加载资产数据
     await loadAssets()
     // 显示成功提示
-    showSuccessMessage('资产提取成功！')
+    showSuccessMessage(t('withdraw_success'))
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error)
     console.error('提取失败:', errMsg)
-    showErrorMessage(`提取失败！请检查网络连接或重试。`)
+    showErrorMessage(t('withdraw_failed'))
   } finally {
     isUnfreezing.value = false
   }
@@ -528,6 +541,13 @@ const unfreezeAsset = async (asset: any) => {
 </script>
 
 <style scoped>
+input,
+button,
+select {
+  border: none;
+  outline: none;
+  /* border: 1px solid transparent; */
+}
 /* 全局基础样式 */
 :deep(body) {
   background-color: #f5f7fa;
@@ -578,6 +598,62 @@ const unfreezeAsset = async (asset: any) => {
 
 .placeholder {
   width: 80px; /* 加大占位宽度 */
+}
+
+.lang-select {
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #3d3c63;
+  font-size: 14px;
+  padding: 0 8px;
+}
+
+/* 语言切换按钮样式与动画 */
+.lang-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #3d3c63;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.lang-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  border-color: #d7e6fb;
+}
+
+.lang-btn:active {
+  transform: translateY(0);
+}
+
+.lang-text {
+  font-weight: 600;
+}
+
+.lang-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #409eff;
+  display: inline-block;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.35); opacity: 0.6; }
 }
 
 /* 钱包信息区域 */
