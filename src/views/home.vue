@@ -264,6 +264,7 @@ const freezeTBC = async () => {
     const txraws: string[] = [] // 未签名交易
     // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
     const utxos = await API.getUTXOs(curAddress.value, tbcNumber + 0.1, network)
+    console.log('utxos:', utxos)
     if (!utxos || utxos.length === 0) throw new Error("无可用UTXO支付手续费");
     // 未签名交易
     const freezeTx = piggyBank.freezeTBC(curAddress.value, tbcNumber, lockTime, utxos)
@@ -325,6 +326,7 @@ const freezeTBC = async () => {
         return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString())
       })
     }
+    // 广播交易
     const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network)
     if (!res) throw new Error("交易广播失败");
     // console.log('交易广播成功，冻结成功，交易ID：', res)

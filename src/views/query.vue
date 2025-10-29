@@ -39,7 +39,7 @@
     <!-- 资产统计概览 -->
     <div class="stats-section">
       <div class="stat-card frozen">
-        <div class="stat-value">{{ (frozenTotal / 1000000).toFixed(6) }}</div>
+        <div class="stat-value">{{ frozenTotal }}</div>
         <div class="stat-label">已存储未到期资产总额 (TBC)</div>
       </div>
       <div class="stat-card unfrozen">
@@ -71,13 +71,13 @@
               class="unfreeze-btn"
               :disabled="isUnfreezing"
             >
-              {{ isUnfreezing ? '解冻中...' : '解冻' }}
+              {{ isUnfreezing ? '提取中...' : '提取' }}
             </button>
           </div>
           <div class="asset-info">
             <div class="info-item">
               <span class="info-label">存储到期时间:</span>
-              <span class="info-value">{{ asset.lockTime || '解码失败' }}</span>
+              <span class="info-value">{{ asset.lockTime ? blockHeightToDate(asset.lockTime) : '解码失败' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">区块高度:</span>
@@ -98,7 +98,7 @@
       <p class="section-description">存储到期时间以区块高度为准</p>
       <div v-if="frozenAssets.length === 0" class="empty-state">
         <img src="../assets/empty.svg" class="empty-icon"></img>
-        <p>暂无已冻结资产</p>
+        <p>暂无已存储资产</p>
       </div>
 
       <div v-else class="assets-list">
@@ -109,12 +109,12 @@
         >
           <div class="asset-header">
             <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} TBC</div>
-            <div class="status-badge frozen">已冻结</div>
+            <div class="status-badge frozen">未到期</div>
           </div>
           <div class="asset-info">
             <div class="info-item">
               <span class="info-label">存储到期时间:</span>
-              <span class="info-value">{{ asset.lockTime || '解码失败' }}</span>
+              <span class="info-value">{{ asset.lockTime ? blockHeightToDate(asset.lockTime) : '解码失败' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">区块高度:</span>
@@ -129,9 +129,14 @@
       </div>
     </div>
 
+    <!-- 成功提示 -->
+    <Transition name="success-fade">
+      <div class="success-message" v-if="successMessage">{{ successMessage }}</div>
+    </Transition>
+
     <!-- 错误提示 -->
     <Transition name="error-fade">
-      <span class="error-message" v-if="errorMessage">{{ errorMessage }}</span>
+      <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
     </Transition>
   </div>
 </template>
@@ -169,6 +174,7 @@ const unfrozenAssets = ref<any[]>([]) // 可解冻资产
 const frozenTotal = ref(0) // 已冻结总额
 const unfrozenTotal = ref(0) // 可解冻总额
 const errorMessage = ref('') // 错误信息
+const successMessage = ref('') // 成功信息
 const isUnfreezing = ref(false) // 是否正在解冻
 
 // 其他数据-本地存储
@@ -192,6 +198,49 @@ const decodeLockTime = (lockTimeChunk: any): number => {
     // 如果解析失败，返回 0
     return 0;
   }
+}
+
+// 将区块高度转换为日期
+const blockHeightToDate = (blockHeight: number): string => {
+  if (!blockHeight || blockHeight <= 0) return '无效区块高度';
+  
+  try {
+    // 假设每个区块间隔10分钟，从创世区块开始计算
+    const blockTimeMinutes = 10; // 每个区块10分钟
+    const genesisBlockTime = new Date('2023-01-01T00:00:00Z'); // 假设的创世区块时间
+    
+    // 计算目标区块的时间
+    const targetTime = new Date(genesisBlockTime.getTime() + (blockHeight - 1) * blockTimeMinutes * 60 * 1000);
+    
+    // 设置为当天的0点
+    const targetDate = new Date(targetTime.getFullYear(), targetTime.getMonth(), targetTime.getDate());
+    
+    // 格式化日期
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error('区块高度转换日期失败:', error);
+    return '转换失败';
+  }
+}
+
+// 显示成功提示
+const showSuccessMessage = (message: string) => {
+  successMessage.value = message;
+  setTimeout(() => {
+    successMessage.value = '';
+  }, 3000);
+}
+
+// 显示错误提示
+const showErrorMessage = (message: string) => {
+  errorMessage.value = message;
+  setTimeout(() => {
+    errorMessage.value = '';
+  }, 5000);
 }
 
 // 页面挂载时获取数据
@@ -240,9 +289,9 @@ const getBlockHeight = async () => {
   try {
     const res = await API.fetchBlockHeaders(network)
     curBlockHeight.value = res[0]?.height || 0
-    console.log('当前区块高度:', curBlockHeight.value)
+    // console.log('当前区块高度:', curBlockHeight.value)
   } catch (error) {
-    console.error('获取当前区块高度失败:', error)
+    // console.error('获取当前区块高度失败:', error)
     errorMessage.value = '获取当前区块高度失败'
   }
 }
@@ -254,16 +303,16 @@ const loadAssets = async () => {
     errorMessage.value = ''
     // 获取已冻结的TBC余额
     frozenTotal.value = await API.fetchFrozenTBCBalance(curAddress.value, network)
-    console.log('已冻结资产总额:', frozenTotal)
+    // console.log('已冻结资产总额:', frozenTotal)
 
     // 获取已冻结的UTXO列表
     const frozenList = await API.fetchFrozenUTXOList(curAddress.value, network)
-    console.log('原始已冻结资产:', frozenList)
+    // console.log('原始已冻结资产:', frozenList)
     
     // 解码锁定时间并构建新的资产数据结构
     const processedFrozenAssets: any[] = []
     if (frozenList && frozenList.length > 0) {
-      frozenList.forEach((utxo, index) => {
+      frozenList.forEach((utxo) => {
         try {
           // 校验脚本长度
           if (!utxo.script || utxo.script.length !== 106) {
@@ -285,7 +334,7 @@ const loadAssets = async () => {
           
           // 解码锁定时间
           const lockTime = decodeLockTime(lockTimeChunk)
-          console.log(`资产 ${index} 锁定时间:`, lockTime)
+          // console.log(`资产 ${index} 锁定时间:`, lockTime)
           
           // 创建包含解码后lockTime的资产对象
           const processedAsset = {
@@ -296,7 +345,7 @@ const loadAssets = async () => {
           
           processedFrozenAssets.push(processedAsset)
         } catch (error) {
-          console.error(`解码资产 ${index} 锁定时间失败:`, error)
+          // console.error(`解码资产 ${index} 锁定时间失败:`, error)
           // 即使解码失败，也保留原始数据，但标记为错误状态
           processedFrozenAssets.push({
             ...utxo,
@@ -319,53 +368,113 @@ const loadAssets = async () => {
     frozenTotal.value = frozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
     unfrozenTotal.value = unfrozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
     
-    console.log('已冻结资产:', frozenAssets.value)
-    console.log('可解冻资产:', unfrozenAssets.value)
+    // console.log('已冻结资产:', frozenAssets.value)
+    // console.log('可解冻资产:', unfrozenAssets.value)
   } catch (error) {
-    console.error('加载资产失败:', error)
+    // console.error('加载资产失败:', error)
     errorMessage.value = '加载资产失败'
   }
 }
 
-// 解冻资产
+// 构造解冻资产交易-【冻结---存入】-【解冻---提取】
 const unfreezeAsset = async (asset: any) => {
+  console.log('asset:', asset)
   if (isUnfreezing.value) return
   try {
     isUnfreezing.value = true
     errorMessage.value = ''
+    
+    // 确保 utxo 是列表【数组】
+    const utxos = Array.isArray(asset) ? asset : [asset]
+    console.log('utxos:', utxos)
+    
     // 获取公钥
     const { tbcPubKey } = await window.Turing.getPubKey()
     const publicKey = new tbc.PublicKey(tbcPubKey)
-    // 构造解冻交易
-    const unfreezeTx = await piggyBank.unfreezeTBC(curAddress.value, [asset], network)
+    
+    // 准备签名参数 - 修正数组初始化
+    const utxos_satoshis: number[][] = []
+    const script_pubkeys: string[][] = []
+    const txraws: string[] = [] // 未签名交易
+    
+    // 构造解冻交易-未签名交易
+    const unfreezeTx = await piggyBank.unfreezeTBC(curAddress.value, utxos, network)
     const tx = new tbc.Transaction(unfreezeTx)
-    // 准备签名参数
-    const utxos_satoshis: number[][] = [[asset.satoshis]]
-    const script_pubkeys: string[][] = [[asset.script]]
-    const txraws: string[] = [tx.uncheckedSerialize()]
-    // 对交易进行签名
-    const { sigs } = await window.Turing.signTransaction({
+    console.log('解冻交易:', tx)
+    const txRaw = tx.uncheckedSerialize()
+    txraws.push(txRaw) // 序列化未签名交易
+
+    // 准备签名数据
+    const satoshis: number[] = []
+    const scripts: string[] = []
+    
+    for(let i = 0; i < utxos.length; i++) {
+      satoshis.push(utxos[i].satoshis)
+      scripts.push(utxos[i].script)
+    }
+    
+    utxos_satoshis.push(satoshis)
+    script_pubkeys.push(scripts)
+    // console.log('utxos_satoshis:', utxos_satoshis)
+    // console.log('script_pubkeys:', script_pubkeys)
+    // console.log('txraws:', txraws)
+    // 对交易进行签名（兼容新旧钱包返回：优先 sigs，缺失则尝试 sig）
+    const signRes: any = await window.Turing.signTransaction({
       txraws,
       utxos_satoshis,
       script_pubkeys
     })
-    if (!sigs || sigs.length === 0) throw new Error("交易签名失败")
-    // 将签名添加到交易中
-    tx.setInputScript({ inputIndex: 0 }, () => {
-      const sig = sigs[0]![0]!
-      const sig_length = (sig.length / 2).toString(16)
-      const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16)
-      return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString())
-    })
+    
+    // console.log('签名结果:', signRes)
+    
+    let sigInput: string[] = []
+    try {
+      if (signRes && signRes.sigs) {
+        const sigs = signRes.sigs
+        // sigs 是一个二维数组，每个交易对应一个签名数组
+        sigInput = Array.isArray(sigs[0]) ? sigs[0] : sigs
+      } else if (signRes && signRes.sig) {
+        const sig = signRes.sig
+        sigInput = Array.isArray(sig) ? sig : [sig]
+      }
+      
+      // console.log('解析后的签名:', sigInput)
+      
+      if (!sigInput || sigInput.length === 0) {
+        throw new Error('签名数据为空')
+      }
+      
+      // 检查签名数量是否与UTXO数量匹配
+      if (sigInput.length !== utxos.length) {
+        throw new Error(`签名数量不匹配：期望${utxos.length}个，实际${sigInput.length}个`)
+      }
+    } catch (e) {
+      throw new Error(`交易签名失败：${e instanceof Error ? e.message : '未获取到有效签名'}`)
+    }
+    
+    // 将签名添加到交易中，设置UTXO的解锁脚本
+    for (let i = 0; i < utxos.length; i++) {
+      const sig = sigInput[i]
+      if (!sig) throw new Error(`交易签名失败：缺少第${i}个输入的签名`)
+      
+      tx.setInputScript({ inputIndex: i }, () => {
+        const sig_length = (sig.length / 2).toString(16)
+        const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16)
+        return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString())
+      })
+    }
+
     // 广播交易
-    await API.broadcastTXraw(tx.uncheckedSerialize(), network)
+    const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network)
+    if (!res) throw new Error("交易广播失败");
     // 重新加载资产数据
     await loadAssets()
-    alert('解冻成功！')
+    // 显示成功提示
+    showSuccessMessage('资产提取成功！')
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error)
-    console.error('解冻失败:', errMsg)
-    errorMessage.value = `解冻失败：${errMsg}`
+    console.error('提取失败:', errMsg)
+    showErrorMessage(`提取失败！请检查网络连接或重试。`)
   } finally {
     isUnfreezing.value = false
   }
@@ -528,9 +637,15 @@ const unfreezeAsset = async (asset: any) => {
 }
 
 .section-description {
-  color: #666;
-  margin-bottom: 10px; /* 加大底部外边距 */
-  font-size: 14px; /* 加大提示字体 */
+  color: #409eff;
+  margin-bottom: 15px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #f0f9ff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #409eff;
+  display: inline-block;
 }
 
 .empty-state {
@@ -675,23 +790,71 @@ const unfreezeAsset = async (asset: any) => {
   color: #ff4d4f;
 }
 
+/* 成功提示样式 */
+.success-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #51cf66;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
+  z-index: 1000;
+  max-width: 300px;
+}
+
 /* 错误提示样式 */
 .error-message {
-  color: #ff4d4f;
-  font-size: 1rem; /* 加大错误提示字体 */
-  margin-top: 8px; /* 加大顶部外边距 */
-  display: block;
-  text-align: center;
-  padding: 12px; /* 加大内边距 */
-  background: rgba(255, 77, 79, 0.1);
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #ff4d4f;
+  color: white;
+  padding: 12px 20px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 77, 79, 0.2);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+  z-index: 1000;
+  max-width: 300px;
+}
+
+/* 成功提示动画 */
+.success-fade-enter-from {
+  opacity: 0;
+  transform: translateX(100px);
+}
+
+.success-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.success-fade-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.success-fade-leave-from {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.success-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.success-fade-leave-to {
+  opacity: 0;
+  transform: translateX(100px);
 }
 
 /* 错误提示动画 */
 .error-fade-enter-from {
   opacity: 0;
-  transform: translateY(-5px);
+  transform: translateX(100px);
 }
 
 .error-fade-enter-active {
@@ -700,12 +863,12 @@ const unfreezeAsset = async (asset: any) => {
 
 .error-fade-enter-to {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 
 .error-fade-leave-from {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 
 .error-fade-leave-active {
@@ -714,7 +877,7 @@ const unfreezeAsset = async (asset: any) => {
 
 .error-fade-leave-to {
   opacity: 0;
-  transform: translateY(-5px);
+  transform: translateX(100px);
 }
 
 /* 滚动条样式 */
