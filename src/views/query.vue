@@ -3,9 +3,9 @@
     <!-- 顶部导航 -->
     <header class="header">
       <router-link to="/" class="back-btn">
-        ← 返回
+        返回
       </router-link>
-      <h1 class="title">解冻资产</h1>
+      <h1 class="title">存储明细</h1>
       <div class="placeholder"></div>
     </header>
 
@@ -39,22 +39,23 @@
     <!-- 资产统计概览 -->
     <div class="stats-section">
       <div class="stat-card frozen">
-        <div class="stat-value">{{ frozenTotal }}</div>
-        <div class="stat-label">已冻结资产 (TBC)</div>
+        <div class="stat-value">{{ (frozenTotal / 1000000).toFixed(6) }}</div>
+        <div class="stat-label">已存储未到期资产总额 (TBC)</div>
       </div>
       <div class="stat-card unfrozen">
         <div class="stat-value">{{ unfrozenTotal }}</div>
-        <div class="stat-label">可解冻资产 (TBC)</div>
+        <div class="stat-label">存储到期可提取资产总额 (TBC)</div>
       </div>
     </div>
 
     <!-- 可解冻资产列表 -->
     <div class="unfrozen-section">
-      <h2 class="section-title">可解冻资产</h2>
+      <h2 class="section-title">存储到期可提取资产</h2>
+      <p class="section-description">存储到期时间以区块高度为准</p>
       <div v-if="unfrozenAssets.length === 0" class="empty-state">
         <!-- <div class="empty-icon">🔒</div> -->
         <img src="../assets/empty.svg" class="empty-icon"></img>
-        <p>暂无可解冻资产</p>
+        <p>暂无可提取资产</p>
       </div>
 
       <div v-else class="assets-list">
@@ -75,8 +76,16 @@
           </div>
           <div class="asset-info">
             <div class="info-item">
-              <span class="info-label">冻结时间(区块高度):</span>
-              <span class="info-value">{{ asset.lockTime }}</span>
+              <span class="info-label">存储到期时间:</span>
+              <span class="info-value">{{ asset.lockTime || '解码失败' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">区块高度:</span>
+              <span class="info-value">{{ asset.lockTime || '解码失败' }}</span>
+            </div>
+            <div v-if="asset.decodeError" class="info-item error">
+              <span class="info-label">解码错误:</span>
+              <span class="info-value">{{ asset.decodeError }}</span>
             </div>
           </div>
         </div>
@@ -85,7 +94,8 @@
 
     <!-- 已冻结资产列表 -->
     <div class="frozen-section">
-      <h2 class="section-title">已冻结资产</h2>
+      <h2 class="section-title">已存储未到期资产</h2>
+      <p class="section-description">存储到期时间以区块高度为准</p>
       <div v-if="frozenAssets.length === 0" class="empty-state">
         <img src="../assets/empty.svg" class="empty-icon"></img>
         <p>暂无已冻结资产</p>
@@ -103,8 +113,16 @@
           </div>
           <div class="asset-info">
             <div class="info-item">
-              <span class="info-label">冻结时间(区块高度):</span>
-              <span class="info-value">{{ asset.lockTime }}</span>
+              <span class="info-label">存储到期时间:</span>
+              <span class="info-value">{{ asset.lockTime || '解码失败' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">区块高度:</span>
+              <span class="info-value">{{ asset.lockTime || '解码失败' }}</span>
+            </div>
+            <div v-if="asset.decodeError" class="info-item error">
+              <span class="info-label">解码错误:</span>
+              <span class="info-value">{{ asset.decodeError }}</span>
             </div>
           </div>
         </div>
@@ -240,28 +258,67 @@ const loadAssets = async () => {
 
     // 获取已冻结的UTXO列表
     const frozenList = await API.fetchFrozenUTXOList(curAddress.value, network)
-    console.log('已冻结资产:', frozenList)
-    frozenAssets.value = frozenList || []
-    // 解码锁定时间
-    const utxo = frozenList[0]!
-    if (utxo.script!.length != 106) {
-          throw new Error("Invalid Piggy Bank script");
-      }
-        const script = tbc.Script.fromString(utxo.script);
-        const lockTimeChunk = script.chunks![script.chunks!.length - 8]!.buf;
-        console.log('lockTimeChunk 长度:', lockTimeChunk.length);
-        console.log('lockTimeChunk 类型:', typeof lockTimeChunk);
-        console.log('lockTimeChunk 内容:', lockTimeChunk);
-        // 使用通用函数解码锁定时间
-        const lockTime = decodeLockTime(lockTimeChunk);
-        console.log('锁定时间:', lockTime)
-    // 获取可解冻的UTXO列表
-    // const unfrozenList = await API.fetchUnfrozenUTXOList(curAddress.value, network)
-    // console.log('可解冻资产:', unfrozenList)
-    // unfrozenAssets.value = unfrozenList || []
+    console.log('原始已冻结资产:', frozenList)
+    
+    // 解码锁定时间并构建新的资产数据结构
+    const processedFrozenAssets: any[] = []
+    if (frozenList && frozenList.length > 0) {
+      frozenList.forEach((utxo, index) => {
+        try {
+          // 校验脚本长度
+          if (!utxo.script || utxo.script.length !== 106) {
+            throw new Error("Invalid Piggy Bank script")
+          }
+          
+          // 解码锁定时间
+          const script = tbc.Script.fromString(utxo.script)
+          const lockTimeChunk = script.chunks![script.chunks!.length - 8]!.buf
+          
+          if (!lockTimeChunk) {
+            throw new Error("Lock time chunk not found");
+          }
+          
+          // 校验chunk长度（确保能正确读取32位整数）
+          if (lockTimeChunk.length !== 4) {
+            throw new Error(`Lock time chunk length invalid (expected 4, got ${lockTimeChunk.length})`);
+          }
+          
+          // 解码锁定时间
+          const lockTime = decodeLockTime(lockTimeChunk)
+          console.log(`资产 ${index} 锁定时间:`, lockTime)
+          
+          // 创建包含解码后lockTime的资产对象
+          const processedAsset = {
+            ...utxo, // 保留原始UTXO数据
+            lockTime: lockTime, // 添加解码后的锁定时间
+            isUnfrozen: lockTime <= curBlockHeight.value // 判断是否可解冻
+          }
+          
+          processedFrozenAssets.push(processedAsset)
+        } catch (error) {
+          console.error(`解码资产 ${index} 锁定时间失败:`, error)
+          // 即使解码失败，也保留原始数据，但标记为错误状态
+          processedFrozenAssets.push({
+            ...utxo,
+            lockTime: 0,
+            isUnfrozen: false,
+            decodeError: error instanceof Error ? error.message : String(error)
+          })
+        }
+      })
+    }
+    
+    // 更新已冻结资产列表
+    frozenAssets.value = processedFrozenAssets
+    
+    // 分离可解冻和已冻结的资产
+    unfrozenAssets.value = processedFrozenAssets.filter(asset => asset.isUnfrozen)
+    frozenAssets.value = processedFrozenAssets.filter(asset => !asset.isUnfrozen)
+    
     // 计算总额
-    // frozenTotal.value = frozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
-    // unfrozenTotal.value = unfrozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
+    frozenTotal.value = frozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
+    unfrozenTotal.value = unfrozenAssets.value.reduce((sum, asset) => sum + asset.satoshis, 0) / 1000000
+    
     console.log('已冻结资产:', frozenAssets.value)
     console.log('可解冻资产:', unfrozenAssets.value)
   } catch (error) {
@@ -465,9 +522,15 @@ const unfreezeAsset = async (asset: any) => {
 
 .section-title {
   color: #3d3c63;
-  margin-bottom: 25px; /* 加大底部外边距 */
+  margin-bottom: 10px; /* 加大底部外边距 */
   font-size: 20px; /* 加大标题字体 */
   font-weight: bold;
+}
+
+.section-description {
+  color: #666;
+  margin-bottom: 10px; /* 加大底部外边距 */
+  font-size: 14px; /* 加大提示字体 */
 }
 
 .empty-state {
@@ -595,6 +658,21 @@ const unfreezeAsset = async (asset: any) => {
   color: #3d3c63;
   font-size: 14px; /* 加大数值字体 */
   font-weight: 600;
+}
+
+.info-item.error {
+  background: rgba(255, 77, 79, 0.1);
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.info-item.error .info-label {
+  color: #ff4d4f;
+}
+
+.info-item.error .info-value {
+  color: #ff4d4f;
 }
 
 /* 错误提示样式 */

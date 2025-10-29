@@ -4,7 +4,7 @@
     <header class="header">
       <h1 class="title">存钱罐</h1>
       <router-link to="/query" class="query-btn">
-        解冻资产
+        存储明细
       </router-link>
     </header>
     <!-- logo图片 -->
@@ -38,7 +38,7 @@
         </div>
       </template>
       <!-- 冻结资产表单 -->
-      <h2 class="title">冻结资产</h2>
+      <h2 class="title">存入资产</h2>
       <form @submit.prevent="handleDeposit" class="deposit-form">
         <!-- 冻结金额 -->
         <div class="form-group">
@@ -47,7 +47,7 @@
             :class="errors.amountTip ? 'error-input' : ''"
             id="amount"
             v-model.number="formData.depositAmount"
-            placeholder="请输入冻结金额"
+            placeholder="请输入存入金额"
             @input="validateAmount"
           />
           <Transition name="error-fade">
@@ -69,7 +69,7 @@
           <span class="error-message" v-if="submitError">{{ submitError }}</span>
         </Transition>
         <button type="submit" class="deposit-btn" :disabled="!formData.depositAmount || formData.depositAmount <= 0">
-          冻结
+          存入
         </button>
       </form>
     </div>

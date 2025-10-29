@@ -1,6 +1,6 @@
 <template>
   <div class="form-group">
-    <label>冻结时间</label>
+    <label>存储期限</label>
     <!-- 输入框容器 -->
     <div class="el-time-picker" :class="{ 'is-active': isPanelShow }">
       <div class="el-input form-input" :class="{ 'is-focus': isFocused }">
