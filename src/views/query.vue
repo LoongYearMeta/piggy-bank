@@ -205,12 +205,27 @@ const blockHeightToDate = (blockHeight: number): string => {
   if (!blockHeight || blockHeight <= 0) return '无效区块高度';
   
   try {
-    // 假设每个区块间隔10分钟，从创世区块开始计算
-    const blockTimeMinutes = 10; // 每个区块10分钟
-    const genesisBlockTime = new Date('2023-01-01T00:00:00Z'); // 假设的创世区块时间
+    // 获取当前区块高度和当前时间
+    const currentBlockHeight = curBlockHeight.value;
+    const currentTime = new Date();
+    let flag = false
     
-    // 计算目标区块的时间
-    const targetTime = new Date(genesisBlockTime.getTime() + (blockHeight - 1) * blockTimeMinutes * 60 * 1000);
+    // 如果目标区块高度小于等于当前区块高度，说明已到期
+    if (blockHeight <= currentBlockHeight) {
+      flag = true
+    }
+    
+    // 计算区块高度差值
+    const blockDifference = blockHeight - currentBlockHeight;
+    
+    // 每个区块间隔10分钟
+    const blockTimeMinutes = 10;
+    
+    // 计算时间差（毫秒）
+    const timeDifferenceMs = blockDifference * blockTimeMinutes * 60 * 1000;
+    
+    // 计算目标时间 = 当前时间 + 时间差
+    const targetTime = flag ? new Date(currentTime.getTime() - timeDifferenceMs) : new Date(currentTime.getTime() + timeDifferenceMs);
     
     // 设置为当天的0点
     const targetDate = new Date(targetTime.getFullYear(), targetTime.getMonth(), targetTime.getDate());
