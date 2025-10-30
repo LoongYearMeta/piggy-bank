@@ -4,6 +4,7 @@ export type Locale = 'zh' | 'en'
 
 const messages: Record<Locale, Record<string, string>> = {
   zh: {
+    warning_wallet_not_installed: '请先安装Turing钱包',
     app_title: '存钱罐',
     nav_details: '存储明细',
     back: '返回',
@@ -66,6 +67,7 @@ const messages: Record<Locale, Record<string, string>> = {
     already_matured: '已到期',
   },
   en: {
+    warning_wallet_not_installed: 'Please install Turing Wallet first',
     app_title: 'Piggy Bank',
     nav_details: 'Deposit Details',
     back: 'Back',

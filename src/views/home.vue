@@ -16,33 +16,8 @@
     <!-- logo图片 -->
     <img src="../assets/piggy-bank.svg" alt="piggy-bank" class="piggy-bank-img">
     <!-- 钱包信息区域 -->
+    <WalletInfo />
     <div class="deposit-section">
-      <!-- 获取钱包地址、余额、区块高度 -->
-      <button @click="getAddress">{{ t('click_get_address') }}</button>
-      <!-- 当前钱包地址 -->
-      <template v-if="curAddress">
-        <div class="form-group">
-          <label>{{ t('current_address') }}</label>
-          <input
-            v-model="curAddress"
-            disabled
-          />
-        </div>
-        <div class="form-group">
-          <label>{{ t('current_balance') }}</label>
-          <input
-            v-model="tbcBalance"
-            disabled
-          />
-        </div>
-        <div class="form-group">
-          <label>{{ t('current_height') }}</label>
-          <input
-            v-model="curBlockHeight"
-            disabled
-          />
-        </div>
-      </template>
       <!-- 冻结资产表单 -->
       <h2 class="title">{{ t('deposit_section') }}</h2>
       <form @submit.prevent="handleDeposit" class="deposit-form">
@@ -61,7 +36,7 @@
           </Transition>
         </div>
         <div class="form-group">
-          <!-- 新的期限选择组件（旧组件保留不动） -->
+          <!-- 新的期限选择组件 -->
           <TimeSelected
             :address="curAddress"
             :network="network"
@@ -90,29 +65,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted, computed } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
+import WalletInfo from '../components/wallet-info.vue'
 import TimeSelected from './time-selected.vue'
 import { t, locale as localeRef, setLocale } from '../i18n'
 import { API } from 'tbc-contract'
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
 import { Regex } from '../utils/reg'
-import * as tbc from "tbc-lib-js";
-
-// 全局变量声明：Turing钱包接口
-declare global {
-  interface Window {
-    Turing: {
-      connect(): Promise<void>
-      disconnect(): Promise<void>
-      isConnected(): Promise<boolean>
-      getPubKey(): Promise<{ tbcPubKey: string }>
-      getAddress(): Promise<{ tbcAddress: string }>
-      getBalance(): Promise<{ tbc: number }>
-      signTransaction({txraws, utxos_satoshis, script_pubkeys}: {txraws: string[], utxos_satoshis: number[][], script_pubkeys: string[][]}): Promise<{ sigs: string[] }>
-    }
-  }
-}
+import * as tbc from "tbc-lib-js"
+import { useWalletStore } from '../stores/wallet'
 
 // 类型定义-错误提示信息
 interface Errors {
@@ -127,12 +89,15 @@ const formData = reactive({
   depositAmount: 0, // 冻结金额
   lockTime: 0, // 冻结时间（换算为区块高度）
 })
-// 表单数据-钱包
-const tbcBalance = ref(0) // 钱包余额 tbc-余额
-const curAddress = ref('') // 钱包地址
-const curBlockHeight = ref(0) // 当前区块高度
-// 其他数据-本地存储
-const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
+
+// 使用 Pinia store 管理钱包信息
+const walletStore = useWalletStore()
+const { walletInfo } = walletStore
+
+// 为了保持向后兼容，创建别名
+const curAddress = computed(() => walletInfo.curAddress || '')
+const tbcBalance = computed(() => walletInfo.tbcBalance || 0)
+const curBlockHeight = computed(() => walletInfo.curBlockHeight || 0)
 
 const errors = reactive<Errors>({ // 错误提示
   amountTipKey: '',
@@ -149,20 +114,17 @@ const submitError = computed(() => {
   return submitErrorType.value ? t(submitErrorType.value) : ''
 })
 
+// 成功和错误消息
 const successMessage = ref('')
 const errorMessage = ref('')
 
+// 语言
 const locale = localeRef
 
+// 切换语言
 function toggleLocale() {
   setLocale(locale.value === 'zh' ? 'en' : 'zh')
 }
-
-// 页面挂载时获取数据
-onMounted(async () => {
-  // 钱包数据初始化
-  await getWalletData()
-})
 
 // 监听金额变化，实时校验
 watch(
@@ -185,7 +147,7 @@ const handleLockTimeChange = (lockTime: number) => {
   formData.lockTime = lockTime
 }
 
-// 冻结金额校验
+// 冻结金额校验规则
 const validateAmount = (): boolean => {
   errors.amountTipKey = ''
   const depositAmount = formData.depositAmount
@@ -208,7 +170,7 @@ const validateAmount = (): boolean => {
   return true
 }
 
-// 冻结时间校验
+// 冻结时间校验规则
 const validateLockTime = (): boolean => {
   errors.timeTipKey = ''
   const lockTime = formData.lockTime
@@ -220,48 +182,7 @@ const validateLockTime = (): boolean => {
   return true
 }
 
-// 获取钱包数据
-const getWalletData = async () => {
-  await getAddress()
-  await getBalance()
-  await getBlockHeight()
-}
-
-// 获取钱包地址
-const getAddress = async () => {
-  if (!window.Turing) {
-    alert(t('need_wallet_install'))
-    return
-  }
-  try {
-    await window.Turing.connect()
-    const { tbcAddress } = await window.Turing.getAddress()
-    localStorage.setItem(STORAGE_KEY, tbcAddress)
-    curAddress.value = tbcAddress
-  } catch (error) {
-    console.error('获取钱包地址失败:', error)
-  }
-}
-
-// 获取钱包余额
-const getBalance = async () => {
-  try {
-    const tbc = await API.getTBCbalance(curAddress.value, network)
-    tbcBalance.value = tbc / 1000000
-  } catch (error) {
-    console.error('获取钱包余额失败:', error)
-  }
-}
-
-// 获取当前区块高度
-const getBlockHeight = async () => {
-  try {
-    const res = await API.fetchBlockHeaders(network)
-    curBlockHeight.value = res[0]?.height || 0
-  } catch (error) {
-    console.error('获取当前区块高度失败:', error)
-  }
-}
+// 钱包数据获取方法已移到 WalletInfo 组件
 
 // 构造冻结资产交易
 const freezeTBC = async () => {
@@ -270,8 +191,10 @@ const freezeTBC = async () => {
   const lockTime = formData.lockTime
   try {
     // 参数校验
-    if (!curAddress.value) throw new Error("钱包地址未获取");
-    if (!lockTime || lockTime <= curBlockHeight.value) throw new Error("锁定区块高度无效（需大于当前区块）");
+    const address = curAddress.value
+    const blockHeight = curBlockHeight.value
+    if (!address) throw new Error("钱包地址未获取");
+    if (!lockTime || lockTime <= blockHeight) throw new Error("锁定区块高度无效（需大于当前区块）");
     if (!tbcAmount || tbcAmount <= 0) throw new Error("冻结金额无效");
     // 参数准备-UTXO的金额和锁定脚本
     const { tbcPubKey } = await window.Turing.getPubKey();
@@ -281,11 +204,11 @@ const freezeTBC = async () => {
     const script_pubkeys: string[][] = [[], []] // 二维数组：[[第一个交易的UTXO锁定脚本]]
     const txraws: string[] = [] // 未签名交易
     // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
-    const utxos = await API.getUTXOs(curAddress.value, tbcNumber + 0.1, network)
+    const utxos = await API.getUTXOs(address, tbcNumber + 0.1, network)
     console.log('utxos:', utxos)
     if (!utxos || utxos.length === 0) throw new Error("无可用UTXO支付手续费");
     // 未签名交易
-    const freezeTx = piggyBank.freezeTBC(curAddress.value, tbcNumber, lockTime, utxos)
+    const freezeTx = piggyBank.freezeTBC(address, tbcNumber, lockTime, utxos)
     const tx = new tbc.Transaction(freezeTx)
     // 交易签名
     const txRaw = tx.uncheckedSerialize()
