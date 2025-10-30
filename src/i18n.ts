@@ -35,7 +35,7 @@ const messages: Record<Locale, Record<string, string>> = {
     err_get_balance: '获取钱包余额失败',
     err_get_height: '获取当前区块高度失败',
     err_load_assets: '加载资产失败',
-    withdraw_success: '资产提取成功！',
+    withdraw_success: '提取成功！',
     withdraw_failed: '提取失败！请检查网络连接或重试。',
     deposit_success: '存入成功！',
     deposit_failed: '存入失败！请检查网络连接或重试。',

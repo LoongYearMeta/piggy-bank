@@ -416,6 +416,7 @@ select {
   align-items: center;
   margin-bottom: 30px;
   padding: 20px 0;
+  min-width: 0; /* 允许子项在英文时收缩 */
 }
 
 .title {
@@ -423,6 +424,7 @@ select {
   font-size: 24px;
   font-weight: bold;
   margin: 0;
+  word-break: break-word;
 }
 
 .query-btn {
@@ -727,14 +729,8 @@ select {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: #fbd45c;
   color: #333;
   margin-top: 10px;
-}
-
-.deposit-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
 }
 
 .deposit-btn:disabled {
@@ -750,8 +746,7 @@ select {
   display: block;
 }
 
-/* 顶部右侧全局提示样式，与 query.vue 对齐 */
-/* toast styles moved to src/style.css */
+/* 全局提示样式 */
 
 .error-input {
   border: 1px solid #ff4d4f !important;
@@ -847,7 +842,16 @@ select {
 
   .deposit-btn {
     padding: 11px;
-    font-size: 15px;
+    font-size: clamp(14px, 4vw, 15px);
+  }
+
+  .query-btn,
+  .lang-btn .lang-text {
+    font-size: clamp(12px, 3.6vw, 14px);
+  }
+
+  .lang-btn {
+    padding: 6px 10px;
   }
 }
 

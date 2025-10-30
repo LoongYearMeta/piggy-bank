@@ -132,7 +132,9 @@ button:focus-visible {
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
   z-index: 1000;
-  max-width: 300px;
+  max-width: 80vw; /* 移动端限制宽度 */
+  white-space: normal;
+  word-break: break-word;
 }
 .toast-error {
   position: fixed;
@@ -146,7 +148,9 @@ button:focus-visible {
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
   z-index: 1000;
-  max-width: 300px;
+  max-width: 80vw; /* 移动端限制宽度 */
+  white-space: normal;
+  word-break: break-word;
 }
 .toast-success-fade-enter-from,
 .toast-error-fade-enter-from { opacity: 0; transform: translateX(100px); }

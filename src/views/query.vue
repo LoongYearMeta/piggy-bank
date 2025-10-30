@@ -149,14 +149,12 @@
     </div>
     </Transition>
 
-    <!-- 成功提示 -->
-    <Transition name="success-fade">
-      <div class="success-message" v-if="successMessage">{{ successMessage }}</div>
+    <!-- 全局提示，与首页保持一致（使用全局样式 .toast-success/.toast-error） -->
+    <Transition name="toast-success-fade">
+      <div class="toast-success" v-if="successMessage">{{ successMessage }}</div>
     </Transition>
-
-    <!-- 错误提示 -->
-    <Transition name="error-fade">
-      <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
+    <Transition name="toast-error-fade">
+      <div class="toast-error" v-if="errorMessage">{{ errorMessage }}</div>
     </Transition>
   </div>
 </template>
@@ -540,8 +538,9 @@ const unfreezeAsset = async (asset: any) => {
     // 广播交易
     const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network)
     if (!res) throw new Error("交易广播失败");
-    // 重新加载资产数据
+    // 重新加载资产数据并刷新钱包信息
     await loadAssets()
+    await getWalletData()
     // 显示成功提示
     showSuccessMessage('withdraw_success')
   } catch (error) {
@@ -842,6 +841,7 @@ select {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px; /* 加大底部外边距 */
+  min-width: 0; /* 允许子项收缩 */
 }
 
 .asset-amount {
@@ -892,8 +892,10 @@ select {
 }
 
 .info-item {
-  display: flex;
-  justify-content: space-between;
+  /* 改用两列网格，左标签自适应，右侧可收缩省略 */
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
   align-items: center;
   padding: 8px 0; /* 加大上下内边距 */
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -913,6 +915,10 @@ select {
   color: #3d3c63;
   font-size: 14px; /* 加大数值字体 */
   font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .info-item.error {
@@ -1060,12 +1066,24 @@ select {
   }
   
   .asset-amount {
-    font-size: 18px; /* 调整移动端金额字体 */
+    font-size: clamp(16px, 4.2vw, 18px); /* 调整移动端金额字体 */
   }
   
   .unfreeze-btn {
-    padding: 10px 20px; /* 调整移动端按钮内边距 */
-    font-size: 14px; /* 调整移动端按钮字体 */
+    padding: 8px 16px; /* 移动端缩小按钮尺寸 */
+    font-size: clamp(12px, 3.6vw, 14px); /* 调整移动端按钮字体 */
+    white-space: nowrap;
+  }
+
+  .section-title,
+  .section-description,
+  .stat-label {
+    font-size: clamp(12px, 3.6vw, 14px);
+  }
+
+  .page-title, .title {
+    white-space: normal;
+    word-break: break-word;
   }
 }
 </style>
