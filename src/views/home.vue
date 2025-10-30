@@ -18,7 +18,7 @@
     <!-- 钱包信息区域 -->
     <div class="deposit-section">
       <!-- 获取钱包地址、余额、区块高度 -->
-      <!-- <button @click="getAddress">点击获取地址</button> -->
+      <button @click="getAddress">点击获取地址</button>
       <!-- 当前钱包地址 -->
       <template v-if="curAddress">
         <div class="form-group">
