@@ -91,7 +91,6 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted, computed } from 'vue'
-import TimePicker from './time-picker.vue'
 import TimeSelected from './time-selected.vue'
 import { t, locale as localeRef, setLocale } from '../i18n'
 import { API } from 'tbc-contract'
@@ -153,9 +152,6 @@ const submitError = computed(() => {
 const successMessage = ref('')
 const errorMessage = ref('')
 
-// 时间选择器引用
-const timePicker = ref<InstanceType<typeof TimePicker>>()
-
 const locale = localeRef
 
 function toggleLocale() {
@@ -166,10 +162,6 @@ function toggleLocale() {
 onMounted(async () => {
   // 钱包数据初始化
   await getWalletData()
-  // 设置默认冻结时间（1小时后）
-  if (timePicker.value) {
-    timePicker.value.setDefaultTime()
-  }
 })
 
 // 监听金额变化，实时校验
@@ -223,11 +215,6 @@ const validateLockTime = (): boolean => {
   // 检查是否选择了冻结时间
   if (!lockTime) {
     errors.timeTipKey = 'err_select_time'
-    return false
-  }
-  // 校验时间选择器的有效性
-  if (timePicker.value && !timePicker.value.validateTime()) {
-    errors.timeTipKey = 'err_invalid_time'
     return false
   }
   return true

@@ -236,13 +236,7 @@ const lockBlockHeight = computed<number>(() => {
 </script>
 
 <style scoped>
-input,
-button,
-select {
-  border: none;
-  outline: none;
-  /* border: 1px solid transparent; */
-}
+
 .time-selected {
   display: flex;
   flex-direction: column;
