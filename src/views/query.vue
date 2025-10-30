@@ -555,21 +555,14 @@ const unfreezeAsset = async (asset: any) => {
 </script>
 
 <style scoped>
-/* 全局基础样式 */
-input,
-button,
-select {
-  border: none;
-  outline: none;
-  border: 1px solid transparent;
-}
+/* Base reset 已移到全局 src/style.css */
 :deep(body) {
-  background-color: #f5f7fa; /* 固定浅色基础背景，不继承浏览器主题 */
+  background-color: var(--color-bg-light);
   min-height: 100vh;
   margin: 0;
-  padding: 20px;
+  padding: var(--spacing-md);
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; /* 统一字体 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* 全局容器样式 */
@@ -589,10 +582,11 @@ select {
 }
 
 .title {
-  color: #3d3c63;
-  font-size: 28px; /* 加大标题字体 */
+  color: var(--color-text-primary);
+  font-size: 28px;
   font-weight: bold;
   margin: 0;
+  word-break: break-word;
 }
 
 .back-btn {
@@ -624,84 +618,29 @@ select {
   padding: 0 8px;
 }
 
-/* 语言切换按钮样式与动画 */
-.lang-btn {
-  appearance: none;
-  -webkit-appearance: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 20px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #3d3c63;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.lang-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-  border-color: #d7e6fb;
-}
-
-.lang-btn:active {
-  transform: translateY(0);
-}
-
-.lang-text {
-  font-weight: 600;
-}
-
-.lang-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #409eff;
-  display: inline-block;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.35); opacity: 0.6; }
-}
+/* 语言切换按钮已移到全局 src/style.css */
 
 /* 钱包信息区域 */
 .wallet-section {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
-  padding: 25px; /* 加大内边距 */
-  margin-bottom: 25px; /* 加大底部外边距 */
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
-/* 表单基础样式 */
-.form-group {
-  margin-bottom: 20px; /* 加大底部外边距 */
-  margin-top: 15px; /* 加大顶部外边距 */
-}
+/* 表单基础样式已移到全局 src/style.css */
 
-.form-group label {
-  display: block;
-  color: #3d3c63;
-  margin-bottom: 8px; /* 加大底部外边距 */
-  font-size: 15px; /* 加大标签字体 */
-  font-weight: 500;
-}
-
+/* 查询页面特定的输入框样式 */
 .form-group input {
   width: 100%;
-  padding: 15px; /* 加大输入框内边距 */
+  padding: 15px;
   border: 1px solid #eee;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: #ffffff;
-  font-size: 18px; /* 加大输入框字体 */
+  font-size: 18px;
   outline: none;
   box-sizing: border-box;
   color: #333 !important;
@@ -710,8 +649,8 @@ select {
 }
 
 .form-group input:focus {
-  border-color: #a2d0fa;
-  box-shadow: 0 0 0 2px rgba(162, 208, 250, 0.3);
+  border-color: var(--blue-100);
+  box-shadow: 0 0 0 2px var(--blue-focus);
 }
 
 /* 资产统计概览 */
@@ -724,12 +663,12 @@ select {
 
 .stat-card {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
-  padding: 25px; /* 加大内边距 */
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
   text-align: center;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-card.frozen {
@@ -737,49 +676,49 @@ select {
 }
 
 .stat-card.unfrozen {
-  border-left: 4px solid #51cf66;
+  border-left: 4px solid var(--color-success);
 }
 
 .stat-value {
-  color: #3d3c63;
-  font-size: 24px; /* 加大数值字体 */
+  color: var(--color-text-primary);
+  font-size: 24px;
   font-weight: bold;
-  margin-bottom: 8px; /* 加大底部外边距 */
+  margin-bottom: var(--spacing-xs);
 }
 
 .stat-label {
-  color: #666;
-  font-size: 14px; /* 加大标签字体 */
+  color: var(--color-text-secondary);
+  font-size: 14px;
 }
 
 /* 资产列表区域 */
 .unfrozen-section,
 .frozen-section {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
-  padding: 25px; /* 加大内边距 */
-  margin-bottom: 25px; /* 加大底部外边距 */
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .section-title {
-  color: #3d3c63;
-  margin-bottom: 10px; /* 加大底部外边距 */
-  font-size: 20px; /* 加大标题字体 */
+  color: var(--color-text-primary);
+  margin-bottom: 10px;
+  font-size: 20px;
   font-weight: bold;
 }
 
 .section-description {
-  color: #409eff;
+  color: var(--color-primary);
   margin-bottom: 15px;
   font-size: 14px;
   font-weight: 600;
   background: #f0f9ff;
   padding: 8px 12px;
   border-radius: 6px;
-  border-left: 3px solid #409eff;
+  border-left: 3px solid var(--color-primary);
   display: inline-block;
 }
 
@@ -794,9 +733,9 @@ select {
 }
 
 .empty-state p {
-  color: #666;
-  margin-bottom: 25px; /* 加大底部外边距 */
-  font-size: 16px; /* 加大提示字体 */
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
+  font-size: 16px;
 }
 
 /* 资产卡片 */
@@ -851,20 +790,25 @@ select {
 }
 
 .unfreeze-btn {
-  background: #51cf66;
+  background: var(--color-success);
   color: white;
   border: none;
-  padding: 12px 24px; /* 加大按钮内边距 */
-  border-radius: 20px;
-  font-size: 15px; /* 加大按钮字体 */
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  font-size: 15px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 90px;
 }
 
+.unfreeze-btn:focus,
+.unfreeze-btn:active {
+  outline: none !important;
+}
+
 .unfreeze-btn:hover:not(:disabled) {
-  background: #40c057;
+  background: var(--color-success-dark);
   transform: translateY(-1px);
 }
 
@@ -929,73 +873,14 @@ select {
 }
 
 .info-item.error .info-label {
-  color: #ff4d4f;
+  color: var(--color-error);
 }
 
 .info-item.error .info-value {
-  color: #ff4d4f;
+  color: var(--color-error);
 }
 
-/* 成功提示样式 */
-/* success/error toasts moved to src/style.css (.toast-success/.toast-error). Keep per-item error below. */
-
-/* 成功提示动画 */
-.success-fade-enter-from {
-  opacity: 0;
-  transform: translateX(100px);
-}
-
-.success-fade-enter-active {
-  transition: all 0.3s ease;
-}
-
-.success-fade-enter-to {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.success-fade-leave-from {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.success-fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.success-fade-leave-to {
-  opacity: 0;
-  transform: translateX(100px);
-}
-
-/* 错误提示动画 */
-.error-fade-enter-from {
-  opacity: 0;
-  transform: translateX(100px);
-}
-
-.error-fade-enter-active {
-  transition: all 0.3s ease;
-}
-
-.error-fade-enter-to {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.error-fade-leave-from {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.error-fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.error-fade-leave-to {
-  opacity: 0;
-  transform: translateX(100px);
-}
+/* 成功/错误提示和动画已移到全局 src/style.css */
 
 /* 滚动条样式 */
 .assets-list::-webkit-scrollbar {

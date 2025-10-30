@@ -3,6 +3,36 @@
   line-height: 1.5;
   font-weight: 400;
 
+  /* Design Tokens - Colors */
+  --color-primary: #409eff;
+  --color-primary-light: #d7e6fb;
+  --color-bg-light: #f5f7fa;
+  --color-text-primary: #3d3c63;
+  --color-text-secondary: #666;
+  --color-error: #ff4d4f;
+  --color-success: #51cf66;
+  --color-success-dark: #40c057;
+
+  /* Design Tokens - Blue Palette */
+  --blue-100: #a2d0fa;
+  --blue-200: #d5e7fc;
+  --blue-300: #7bc1f7;
+  --blue-focus: rgba(162, 208, 250, 0.3);
+
+  /* Design Tokens - Sizes */
+  --radius-sm: 8px;
+  --radius-md: 15px;
+  --radius-lg: 20px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 20px;
+  --spacing-lg: 25px;
+
+  /* Design Tokens - Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 15px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
+
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
@@ -13,7 +43,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 全局基础样式 */
+/* 全局基础样式 - Reset 样式 */
 input,
 button,
 select {
@@ -21,13 +51,31 @@ select {
   outline: none;
   border: 1px solid transparent;
 }
+
+/* 按钮点击时移除默认边框和轮廓 */
+button:focus,
+button:focus-visible,
+button:active {
+  outline: none !important;
+}
+
+input:focus,
+input:focus-visible {
+  outline: none;
+}
+
+select:focus,
+select:focus-visible {
+  outline: none;
+}
+
 :deep(body) {
-  background-color: #f5f7fa; /* 固定浅色基础背景，不继承浏览器主题 */
+  background-color: var(--color-bg-light);
   min-height: 100vh;
   margin: 0;
-  padding: 20px;
+  padding: var(--spacing-md);
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; /* 统一字体 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 a {
@@ -52,6 +100,7 @@ h1 {
   line-height: 1.1;
 }
 
+/* 默认按钮样式（已被项目自定义样式覆盖） */
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -59,16 +108,11 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: all 0.25s;
 }
 button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  opacity: 0.9;
 }
 
 .card {
@@ -88,23 +132,29 @@ button:focus-visible {
   -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-xs);
   padding: 8px 12px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   border: 1px solid #e5e7eb;
   background: #ffffff;
-  color: #3d3c63;
+  color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 .lang-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-  border-color: #d7e6fb;
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
 }
-.lang-btn:active { transform: translateY(0); }
+.lang-btn:active { 
+  transform: translateY(0); 
+  outline: none !important;
+}
+.lang-btn:focus {
+  outline: none !important;
+}
 .lang-text { font-weight: 600; }
 .lang-dot {
   width: 6px;
@@ -204,12 +254,12 @@ button:focus-visible {
 /* Card container (reusable card style) */
 .card {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
-  padding: 25px;
-  margin-bottom: 25px;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
 /* Page header */
@@ -222,14 +272,14 @@ button:focus-visible {
 }
 
 .page-title {
-  color: #3d3c63;
+  color: var(--color-text-primary);
   font-size: 28px;
   font-weight: bold;
   margin: 0;
 }
 
 .section-title {
-  color: #3d3c63;
+  color: var(--color-text-primary);
   margin-bottom: 10px;
   font-size: 20px;
   font-weight: bold;
@@ -237,8 +287,8 @@ button:focus-visible {
 
 /* Buttons */
 .btn {
-  padding: 12px 20px;
-  border-radius: 20px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
   text-decoration: none;
   font-size: 16px;
   font-weight: 600;
@@ -249,23 +299,28 @@ button:focus-visible {
   text-align: center;
 }
 
+.btn:focus,
+.btn:active {
+  outline: none !important;
+}
+
 .btn--pill {
-  background: #d5e7fc;
-  color: #3d3c63;
-  padding: 12px 20px;
+  background: var(--blue-200);
+  color: var(--color-text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
 }
 .btn--pill:hover {
-  background: #a2d0fa;
+  background: var(--blue-100);
   transform: translateY(-2px);
 }
 
 .btn--primary {
   width: 100%;
-  padding: 12px;
+  padding: var(--spacing-sm);
   background: #fbd45c;
   color: #333;
   margin-top: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 .btn--primary:hover:not(:disabled) {
   transform: translateY(-2px);
@@ -277,15 +332,15 @@ button:focus-visible {
 }
 
 .btn--success {
-  background: #51cf66;
+  background: var(--color-success);
   color: white;
-  padding: 12px 24px;
-  border-radius: 20px;
+  padding: var(--spacing-sm) 24px;
+  border-radius: var(--radius-lg);
   font-size: 15px;
   min-width: 90px;
 }
 .btn--success:hover:not(:disabled) {
-  background: #40c057;
+  background: var(--color-success-dark);
   transform: translateY(-1px);
 }
 .btn--success:disabled {
@@ -295,8 +350,17 @@ button:focus-visible {
 
 /* Form styles */
 .form-group {
-  margin-bottom: 20px;
-  margin-top: 15px;
+  margin-bottom: 15px;
+  margin-top: 10px;
+}
+
+/* Compatibility for .form-group label in components */
+.form-group label {
+  display: block;
+  color: var(--color-text-primary);
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .form-label {
@@ -330,10 +394,25 @@ button:focus-visible {
 }
 
 .form-error {
-  color: #ff4d4f;
+  color: var(--color-error);
   font-size: 0.875rem;
   margin-top: 4px;
   display: block;
+}
+
+/* Error message styles - shared across components */
+.error-message {
+  color: var(--color-error);
+  font-size: 0.875rem;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Error input styles */
+.error-input,
+.input--error {
+  border: 1px solid var(--color-error) !important;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1) !important;
 }
 
 /* Stat cards */
@@ -380,15 +459,19 @@ button:focus-visible {
 }
 
 .info-label {
-  color: #666;
+  color: var(--color-text-secondary);
   font-size: 14px;
   font-weight: 500;
 }
 
 .info-value {
-  color: #3d3c63;
+  color: var(--color-text-primary);
   font-size: 14px;
   font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .info-row--error .info-label,
@@ -412,6 +495,25 @@ button:focus-visible {
 /* Scrollable container */
 .scroll-y {
   overflow-y: auto;
+}
+
+/* Autofill styles - 覆盖浏览器自动填充样式 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:-internal-autofill-selected {
+  -webkit-box-shadow: 0 0 0 100px #ffffff inset !important;
+  box-shadow: 0 0 0 100px #ffffff inset !important;
+  background-color: #ffffff !important;
+  color: #333 !important;
+  -webkit-text-fill-color: #333 !important;
+  font-size: 16px !important;
+}
+
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100px #ffffff inset !important;
+  box-shadow: 0 0 0 100px #ffffff inset !important;
 }
 
 @media (prefers-color-scheme: light) {

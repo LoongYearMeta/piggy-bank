@@ -386,20 +386,14 @@ const handleDeposit = () => {
 </script>
 
 <style scoped>
-input,
-button,
-select {
-  border: none;
-  outline: none;
-  border: 1px solid transparent;
-}
+/* Base reset 已移到全局 src/style.css */
 :deep(body) {
-  background-color: #f5f7fa; /* 固定浅色基础背景，不继承浏览器主题 */
+  background-color: var(--color-bg-light); /* 使用全局变量 */
   min-height: 100vh;
   margin: 0;
   padding: 20px;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; /* 统一字体 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* 全局容器样式 */
@@ -420,7 +414,7 @@ select {
 }
 
 .title {
-  color: #3d3c63; /* 固定深色文字，不受主题影响 */
+  color: var(--color-text-primary); /* 使用全局变量 */
   font-size: 24px;
   font-weight: bold;
   margin: 0;
@@ -444,59 +438,15 @@ select {
 
 .lang-select {
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid #e5e7eb;
   background: #ffffff;
-  color: #3d3c63;
+  color: var(--color-text-primary);
   font-size: 14px;
   padding: 0 8px;
 }
 
-/* 语言切换按钮样式与动画 */
-.lang-btn {
-  appearance: none;
-  -webkit-appearance: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 20px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #3d3c63;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.lang-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-  border-color: #d7e6fb;
-}
-
-.lang-btn:active {
-  transform: translateY(0);
-}
-
-.lang-text {
-  font-weight: 600;
-}
-
-.lang-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #409eff;
-  display: inline-block;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.35); opacity: 0.6; }
-}
+/* 语言切换按钮已移到全局 src/style.css */
 
 /* 存钱罐图片 */
 .piggy-bank-img {
@@ -512,17 +462,17 @@ select {
 
 /* 冻结表单区域（高透明度+阴影，不透主题） */
 .deposit-section {
-  background: rgba(255, 255, 255, 0.95); /* 高不透明度，几乎不透底 */
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px); /* 兼容Safari */
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05); /* 增强层次感，弱化透底影响 */
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-md);
 }
 
 .deposit-section p {
-  color: #3d3c63;
+  color: var(--color-text-primary);
   margin: 8px 0;
 }
 
@@ -540,38 +490,26 @@ select {
   background: #7bc1f7;
 }
 
-/* 表单基础样式 */
-.form-group {
-  margin-bottom: 15px;
-  margin-top: 10px;
-}
+/* 表单基础样式已移到全局 src/style.css */
 
-.form-group label {
-  display: block;
-  color: #3d3c63;
-  margin-bottom: 5px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
+/* 表单输入框样式在组件级别扩展 */
 .form-group input {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #eee; /* 固定浅灰色边框，不依赖主题 */
-  border-radius: 8px;
-  background: #ffffff; /* 纯色背景，完全不透底 */
+  padding: var(--spacing-sm);
+  border: 1px solid #eee;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
   font-size: 16px;
   outline: none;
   box-sizing: border-box;
-  color: #333 !important; /* 固定输入文字色 */
+  color: #333 !important;
   caret-color: #333 !important;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* 输入框聚焦状态 */
 .form-group input:focus {
-  border-color: #a2d0fa;
-  box-shadow: 0 0 0 2px rgba(162, 208, 250, 0.3);
+  border-color: var(--blue-100);
+  box-shadow: 0 0 0 2px var(--blue-focus);
 }
 
 /* 时间输入组（输入框+下拉组件） */
@@ -587,7 +525,7 @@ select {
   flex: 1;
   padding: 14px 16px;
   border: 1px solid #eee;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 15px;
   background: #ffffff;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -596,8 +534,8 @@ select {
 }
 
 .time-input-group input:focus {
-  border-color: #a2d0fa;
-  box-shadow: 0 0 0 2px rgba(162, 208, 250, 0.3);
+  border-color: var(--blue-100);
+  box-shadow: 0 0 0 2px var(--blue-focus);
 }
 
 /* 自定义下拉组件（带动画效果） */
@@ -614,19 +552,19 @@ select {
   padding: 14px 16px;
   padding-right: 40px;
   border: 1px solid #eee;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 15px;
-  background: #ffffff; /* 纯色背景，不受主题影响 */
+  background: #ffffff;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
   transition: all 0.25s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
 }
 
 .select-value span {
-  color: #3d3c63;
+  color: var(--color-text-primary);
   white-space: nowrap;
 }
 
@@ -659,9 +597,9 @@ select {
 
 /* 单个选项（带hover动画和入场延迟） */
 .option-item {
-  padding: 12px 16px;
+  padding: var(--spacing-sm) 16px;
   cursor: pointer;
-  color: #3d3c63;
+  color: var(--color-text-primary);
   transition: all 0.2s ease;
   transform: translateY(0);
   opacity: 1;
@@ -722,9 +660,9 @@ select {
 /* 冻结按钮 */
 .deposit-btn {
   width: 100%;
-  padding: 12px;
+  padding: var(--spacing-sm);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
@@ -733,69 +671,32 @@ select {
   margin-top: 10px;
 }
 
+.deposit-btn:focus,
+.deposit-btn:active {
+  outline: none !important;
+}
+
 .deposit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* 错误提示样式 */
-.error-message {
-  color: #ff4d4f; /* 固定错误色，不受主题影响 */
-  font-size: 0.875rem;
-  margin-top: 4px;
-  display: block;
-}
-
-/* 全局提示样式 */
-
-.error-input {
-  border: 1px solid #ff4d4f !important;
-  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1) !important;
-}
+/* 错误提示样式和动画已移到全局 src/style.css */
 
 /* 错误状态下的下拉组件 */
 .error-input + .custom-select .select-value {
-  border-color: #ff4d4f;
+  border-color: var(--color-error);
   box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1);
 }
 
 .error-input + .custom-select .select-icon {
-  color: #ff4d4f;
+  color: var(--color-error);
 }
 
 /* 下拉组件聚焦状态 */
 .custom-select:focus-within .select-value {
-  border-color: #a2d0fa;
-  box-shadow: 0 0 0 2px rgba(162, 208, 250, 0.3);
-}
-
-/* 错误提示动画 */
-.error-fade-enter-from {
-  opacity: 0;
-  transform: translateY(-5px);
-}
-
-.error-fade-enter-active {
-  transition: all 0.3s ease;
-}
-
-.error-fade-enter-to {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.error-fade-leave-from {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.error-fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.error-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-5px);
+  border-color: var(--blue-100);
+  box-shadow: 0 0 0 2px var(--blue-focus);
 }
 
 /* 移动端响应式适配 */
@@ -855,27 +756,5 @@ select {
   }
 }
 
-/* 自动填充样式：背景+文字色统一固定 */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active,
-input:-internal-autofill-selected {
-  /* 覆盖背景色（原有） */
-  -webkit-box-shadow: 0 0 0 100px #ffffff inset !important;
-  box-shadow: 0 0 0 100px #ffffff inset !important;
-  background-color: #ffffff !important; /* 双重保障背景色 */
-  /* 强制文字色 */
-  color: #333 !important; /* 固定文字色为深色 */
-  -webkit-text-fill-color: #333 !important; /* 兼容Safari/Chrome */
-  /* text-fill-color: #333 !important; 通用 fallback */
-  /* 确保字体样式继承，避免文字模糊 */
-  font-size: 16px !important; /* 与输入框正常字体大小一致 */
-}
-
-input:-webkit-autofill {
-  /* 用足够大的内阴影覆盖背景色 */
-  -webkit-box-shadow: 0 0 0 100px #ffffff inset !important;
-  box-shadow: 0 0 0 100px #ffffff inset !important;
-}
+/* 自动填充样式已移到全局 src/style.css */
 </style>
