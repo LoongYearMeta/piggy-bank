@@ -162,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { API } from 'tbc-contract'
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
@@ -194,8 +194,14 @@ const frozenAssets = ref<any[]>([]) // 已冻结资产
 const unfrozenAssets = ref<any[]>([]) // 可解冻资产
 const frozenTotal = ref(0) // 已冻结总额
 const unfrozenTotal = ref(0) // 可解冻总额
-const errorMessage = ref('') // 错误信息
-const successMessage = ref('') // 成功信息
+
+// 错误和成功消息使用类型键，通过计算属性动态翻译
+const errorMessageType = ref('')
+const errorMessage = computed(() => errorMessageType.value ? t(errorMessageType.value) : '')
+
+const successMessageType = ref('')
+const successMessage = computed(() => successMessageType.value ? t(successMessageType.value) : '')
+
 const isUnfreezing = ref(false) // 是否正在解冻
 const isLoading = ref(true) // 是否在加载数据
 const locale = localeRef
@@ -266,18 +272,18 @@ const blockHeightToDate = (blockHeight: number): string => {
 }
 
 // 显示成功提示
-const showSuccessMessage = (message: string) => {
-  successMessage.value = message;
+const showSuccessMessage = (messageKey: string) => {
+  successMessageType.value = messageKey;
   setTimeout(() => {
-    successMessage.value = '';
+    successMessageType.value = '';
   }, 3000);
 }
 
 // 显示错误提示
-const showErrorMessage = (message: string) => {
-  errorMessage.value = message;
+const showErrorMessage = (messageKey: string) => {
+  errorMessageType.value = messageKey;
   setTimeout(() => {
-    errorMessage.value = '';
+    errorMessageType.value = '';
   }, 5000);
 }
 
@@ -297,7 +303,7 @@ const getWalletData = async () => {
 // 获取钱包地址
 const getAddress = async () => {
   if (!window.Turing) {
-    errorMessage.value = t('need_wallet_install')
+    errorMessageType.value = 'need_wallet_install'
     return
   }
   try {
@@ -307,7 +313,7 @@ const getAddress = async () => {
     curAddress.value = tbcAddress
   } catch (error) {
     console.error('获取钱包地址失败:', error)
-    errorMessage.value = t('err_get_address')
+    errorMessageType.value = 'err_get_address'
   }
 }
 
@@ -318,7 +324,7 @@ const getBalance = async () => {
     tbcBalance.value = tbc / 1000000
   } catch (error) {
     console.error('获取钱包余额失败:', error)
-    errorMessage.value = t('err_get_balance')
+    errorMessageType.value = 'err_get_balance'
   }
 }
 
@@ -330,7 +336,7 @@ const getBlockHeight = async () => {
     // console.log('当前区块高度:', curBlockHeight.value)
   } catch (error) {
     // console.error('获取当前区块高度失败:', error)
-    errorMessage.value = t('err_get_height')
+    errorMessageType.value = 'err_get_height'
   }
 }
 
@@ -339,7 +345,7 @@ const loadAssets = async () => {
   if (!curAddress.value) return
   try {
     isLoading.value = true
-    errorMessage.value = ''
+    errorMessageType.value = ''
     // 获取已冻结的TBC余额
     frozenTotal.value = await API.fetchFrozenTBCBalance(curAddress.value, network)
     // console.log('已冻结资产总额:', frozenTotal)
@@ -411,7 +417,7 @@ const loadAssets = async () => {
     // console.log('可解冻资产:', unfrozenAssets.value)
   } catch (error) {
     // console.error('加载资产失败:', error)
-    errorMessage.value = t('err_load_assets')
+    errorMessageType.value = 'err_load_assets'
   }
   finally {
     isLoading.value = false
@@ -431,7 +437,7 @@ const unfreezeAsset = async (asset: any) => {
   if (isUnfreezing.value) return
   try {
     isUnfreezing.value = true
-    errorMessage.value = ''
+    errorMessageType.value = ''
     
     // 确保 utxo 是列表【数组】
     const utxos = Array.isArray(asset) ? asset : [asset]
@@ -537,11 +543,11 @@ const unfreezeAsset = async (asset: any) => {
     // 重新加载资产数据
     await loadAssets()
     // 显示成功提示
-    showSuccessMessage(t('withdraw_success'))
+    showSuccessMessage('withdraw_success')
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error)
     console.error('提取失败:', errMsg)
-    showErrorMessage(t('withdraw_failed'))
+    showErrorMessage('withdraw_failed')
   } finally {
     isUnfreezing.value = false
   }

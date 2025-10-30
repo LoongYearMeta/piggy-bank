@@ -18,7 +18,7 @@
     <!-- 钱包信息区域 -->
     <div class="deposit-section">
       <!-- 获取钱包地址、余额、区块高度 -->
-      <button @click="getAddress">点击获取地址</button>
+      <button @click="getAddress">{{ t('click_get_address') }}</button>
       <!-- 当前钱包地址 -->
       <template v-if="curAddress">
         <div class="form-group">
@@ -50,14 +50,14 @@
         <div class="form-group">
           <label for="amount">{{ t('amount_label') }}</label>
           <input
-            :class="errors.amountTip ? 'error-input' : ''"
+            :class="errors.amountTipKey ? 'error-input' : ''"
             id="amount"
             v-model.number="formData.depositAmount"
             :placeholder="t('input_amount_placeholder')"
             @input="validateAmount"
           />
           <Transition name="error-fade">
-            <span class="error-message" v-if="errors.amountTip">{{ errors.amountTip }}</span>
+            <span class="error-message" v-if="amountTip">{{ amountTip }}</span>
           </Transition>
         </div>
         <div class="form-group">
@@ -68,7 +68,7 @@
             @update:lockTime="handleLockTimeChange"
           />
           <Transition name="error-fade">
-            <span class="error-message" v-if="errors.timeTip">{{ errors.timeTip }}</span>
+            <span class="error-message" v-if="timeTip">{{ timeTip }}</span>
           </Transition>
         </div>
         <Transition name="error-fade">
@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, computed } from 'vue'
 import TimePicker from './time-picker.vue'
 import TimeSelected from './time-selected.vue'
 import { t, locale as localeRef, setLocale } from '../i18n'
@@ -117,8 +117,8 @@ declare global {
 
 // 类型定义-错误提示信息
 interface Errors {
-  amountTip: string
-  timeTip: string
+  amountTipKey: string // 存储错误键而不是错误文本
+  timeTipKey: string // 存储错误键而不是错误文本
 }
 
 // 响应式数据
@@ -136,12 +136,20 @@ const curBlockHeight = ref(0) // 当前区块高度
 const STORAGE_KEY = 'tbc_wallet_address' // 本地存储密钥
 
 const errors = reactive<Errors>({ // 错误提示
-  amountTip: '',
-  timeTip: ''
+  amountTipKey: '',
+  timeTipKey: ''
 })
 
-// 提交阶段统一错误
-const submitError = ref('')
+// 使用计算属性动态获取错误文本
+const amountTip = computed(() => errors.amountTipKey ? t(errors.amountTipKey) : '')
+const timeTip = computed(() => errors.timeTipKey ? t(errors.timeTipKey) : '')
+
+// 提交阶段统一错误 - 使用计算属性来存储错误类型而不是错误文本
+const submitErrorType = ref('')
+const submitError = computed(() => {
+  return submitErrorType.value ? t(submitErrorType.value) : ''
+})
+
 const successMessage = ref('')
 const errorMessage = ref('')
 
@@ -187,22 +195,22 @@ const handleLockTimeChange = (lockTime: number) => {
 
 // 冻结金额校验
 const validateAmount = (): boolean => {
-  errors.amountTip = ''
+  errors.amountTipKey = ''
   const depositAmount = formData.depositAmount
   // 非空校验
   if (!depositAmount) {
-    errors.amountTip = t('err_enter_amount')
+    errors.amountTipKey = 'err_enter_amount'
     return false
   }
   // 正则校验
   const amountStr = depositAmount.toString()
   if (!Regex.freezeAmountReg.test(amountStr)) {
-    errors.amountTip = t('err_amount_format')
+    errors.amountTipKey = 'err_amount_format'
     return false
   }
   // 金额校验
   if (depositAmount > tbcBalance.value) {
-    errors.amountTip = t('err_amount_exceed_balance')
+    errors.amountTipKey = 'err_amount_exceed_balance'
     return false
   }
   return true
@@ -210,16 +218,16 @@ const validateAmount = (): boolean => {
 
 // 冻结时间校验
 const validateLockTime = (): boolean => {
-  errors.timeTip = ''
+  errors.timeTipKey = ''
   const lockTime = formData.lockTime
   // 检查是否选择了冻结时间
   if (!lockTime) {
-    errors.timeTip = t('err_select_time')
+    errors.timeTipKey = 'err_select_time'
     return false
   }
   // 校验时间选择器的有效性
   if (timePicker.value && !timePicker.value.validateTime()) {
-    errors.timeTip = t('err_invalid_time')
+    errors.timeTipKey = 'err_invalid_time'
     return false
   }
   return true
@@ -358,15 +366,18 @@ const freezeTBC = async () => {
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
     console.error('冻结交易异常:', errMsg);
-    submitError.value = `${t('deposit_failed')}\n${errMsg}`
+    submitErrorType.value = 'deposit_failed'
     errorMessage.value = t('deposit_failed')
-    setTimeout(() => (errorMessage.value = ''), 5000)
+    setTimeout(() => {
+      errorMessage.value = ''
+      submitErrorType.value = ''
+    }, 5000)
   }
 }
 
 // 提交冻结资产
 const handleDeposit = () => {
-  submitError.value = ''
+  submitErrorType.value = ''
   if (!validateAmount()) return
   if (!validateLockTime()) return
   freezeTBC()
