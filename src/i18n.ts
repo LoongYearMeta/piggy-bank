@@ -104,6 +104,10 @@ const messages: Record<Locale, Record<string, string>> = {
     tour_lang_desc: '请选择你希望查看的语言（可随时在顶部切换）',
     tour_lang_zh: '中文',
     tour_lang_en: 'English',
+    tour_ask_title: '需要新手引导吗？',
+    tour_ask_desc: '我们将带你快速了解页面的关键功能。',
+    tour_yes: '是的',
+    tour_no: '不用了',
   },
   en: {
     warning_wallet_not_installed: 'Please install Turing Wallet first',
@@ -206,6 +210,10 @@ const messages: Record<Locale, Record<string, string>> = {
     tour_lang_desc: 'Pick your preferred language (you can change it anytime at the top).',
     tour_lang_zh: '中文',
     tour_lang_en: 'English',
+    tour_ask_title: 'Start onboarding?',
+    tour_ask_desc: 'We will guide you through the key features quickly.',
+    tour_yes: 'Yes',
+    tour_no: 'No',
   },
 }
 

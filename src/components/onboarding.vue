@@ -9,7 +9,11 @@
         <div class="ob-card" :style="cardStyle" ref="cardRef" :key="stepIndex">
         <div class="ob-card__content">
           <h3 class="ob-card__title">{{ activeTitle }}</h3>
-          <p class="ob-card__desc" v-if="!isLangStep">{{ activeDesc }}</p>
+          <p class="ob-card__desc" v-if="!isLangStep && !isAskStep">{{ activeDesc }}</p>
+          <div v-if="isAskStep" class="ob-ask">
+            <button type="button" class="btn btn--next" @click="next">{{ t('tour_yes') }}</button>
+            <button type="button" class="btn" @click="handleSkip">{{ t('tour_no') }}</button>
+          </div>
           <div v-if="isLangStep" class="ob-lang">
             <button type="button" class="btn" @click="chooseLang('zh')">{{ t('tour_lang_zh') }}</button>
             <button type="button" class="btn" @click="chooseLang('en')">{{ t('tour_lang_en') }}</button>
@@ -18,8 +22,8 @@
         <div class="ob-card__actions">
           <button type="button" class="btn" @click="handleSkip">{{ t('tour_skip') }}</button>
           <div class="spacer"></div>
-          <button type="button" class="btn" v-if="stepIndex > 0" @click="prev">{{ t('tour_prev') }}</button>
-          <button type="button" class="btn btn--success" @click="next" v-if="!isLangStep">
+          <button type="button" class="btn" v-if="stepIndex > 0 && !isAskStep" @click="prev">{{ t('tour_prev') }}</button>
+          <button type="button" class="btn btn--next" @click="next" v-if="!isLangStep && !isAskStep">
             {{ isLast ? t('tour_finish') : t('tour_next') }}
           </button>
         </div>
@@ -55,6 +59,7 @@ const activeStep = computed(() => props.steps[Math.min(stepIndex.value, Math.max
 const activeTitle = computed(() => t(activeStep.value?.titleKey || ''))
 const activeDesc = computed(() => t(activeStep.value?.descKey || ''))
 const isLangStep = computed(() => activeStep.value?.titleKey === 'tour_lang_title')
+const isAskStep = computed(() => activeStep.value?.titleKey === 'tour_ask_title')
 const isLast = computed(() => stepIndex.value >= props.steps.length - 1)
 const isGlobalDim = computed(() => !activeStep.value?.targetId)
 
@@ -193,6 +198,15 @@ defineExpose({ open: openTour, close: closeTour, next, prev })
 .ob-card__actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .spacer { flex: 1; }
 .ob-lang { display: flex; gap: 8px; margin-top: 8px; }
+.ob-ask { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+
+/* Next button uses deposit blue tone */
+.btn--next {
+  background: var(--blue-100);
+  color: #3d3c63;
+  border: 1px solid #e5e7eb;
+}
+.btn--next:hover { background: var(--blue-300); transform: translateY(-1px); }
 
 @media (max-width: 480px) {
   .ob-card { width: calc(100vw - 24px); left: 12px !important; }

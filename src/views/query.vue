@@ -2,7 +2,7 @@
   <div class="page-container">
     <!-- 顶部导航 -->
     <header class="page-header">
-      <router-link to="/" class="btn btn--pill">
+      <router-link to="/" class="lang-btn">
         {{ t('back') }}
       </router-link>
       <h1 class="page-title">{{ t('details_title') }}</h1>
@@ -486,18 +486,27 @@ const unfreezeAsset = async (asset: any) => {
 }
 
 .back-btn {
-  background: #d5e7fc;
-  color: #3d3c63;
-  padding: 12px 20px; /* 加大按钮内边距 */
-  border-radius: 20px;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: 8px 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: var(--color-text-primary);
+  font-size: 14px;
   text-decoration: none;
-  font-size: 16px; /* 加大按钮字体 */
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .back-btn:hover {
-  background: #a2d0fa;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
 }
 
 .placeholder {

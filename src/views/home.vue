@@ -8,13 +8,13 @@
           <span class="lang-text">{{ locale === 'zh' ? '中文' : 'English' }}</span>
           <span class="lang-dot" />
         </button>
-        <router-link to="/query" class="query-btn">
+        <router-link to="/query" class="lang-btn">
           {{ t('nav_details') }}
         </router-link>
       </div>
     </header>
     <!-- logo图片 -->
-    <img src="../assets/piggy-bank.svg" alt="piggy-bank" class="piggy-bank-img">
+    <img src="../assets/piggy-bank.png" alt="piggy-bank" class="piggy-bank-img">
     <!-- 钱包信息区域 -->
     <div id="tour-wallet">
       <WalletInfo />
@@ -70,6 +70,7 @@
   <Onboarding
     ref="onboardingRef"
     :steps="[
+      { titleKey: 'tour_ask_title', descKey: 'tour_ask_desc' },
       { titleKey: 'tour_lang_title', descKey: 'tour_lang_desc' },
       { titleKey: 'tour_welcome_title', descKey: 'tour_welcome_desc' },
       { titleKey: 'tour_wallet_title', descKey: 'tour_wallet_desc', targetId: 'tour-wallet' },
@@ -356,6 +357,8 @@ onMounted(() => {
   margin-bottom: 30px;
   padding: 20px 0;
   min-width: 0; /* 允许子项在英文时收缩 */
+  position: relative;
+  z-index: 3; /* 确保按钮覆盖在图片之上 */
 }
 
 .title {
@@ -369,6 +372,14 @@ onMounted(() => {
   padding: 0 14px;
   text-align: center;
   display: block;
+}
+
+/* 顶部导航标题：修正与右侧按钮组的垂直对齐与换行问题 */
+.header .title {
+  margin-bottom: 0; /* 避免额外的下边距造成不对齐 */
+  line-height: 1; /* 垂直居中更准确 */
+  padding: 0; /* 标题左右不再额外占位 */
+  font-size: clamp(18px, 5.2vw, 24px); /* 移动端英文自适应缩放避免换行 */
 }
 
 .query-btn {
@@ -403,11 +414,23 @@ onMounted(() => {
   max-width: 100%;
   height: auto;
   object-fit: contain;
-  margin-bottom: 1.25rem;
-  max-height: 20rem;
+  /* 自适应上移与重叠（桌面与移动均平滑过渡） */
+  margin-bottom: -30%; /* 增加重叠比例 */
+  margin-right: 12%;
+  max-height: auto;
   display: block;
   margin-left: auto;
-  margin-right: auto;
+  /* margin-right: auto; */
+  position: relative;
+  z-index: 0; /* 位于卡片与按钮之下，便于被覆盖 */
+  transform: translateY(-30%); /* 增加上移量 */
+  pointer-events: none; /* 避免遮挡点击 */
+}
+
+/* 让钱包信息区位于图片之上，形成覆盖效果 */
+#tour-wallet {
+  position: relative;
+  z-index: 2;
 }
 
 /* 冻结表单区域（高透明度+阴影，不透主题） */
@@ -728,6 +751,13 @@ onMounted(() => {
   .deposit-btn {
     padding: 11px;
     font-size: clamp(14px, 4vw, 15px);
+  }
+
+  .piggy-bank-img {
+    /* 移动端：更大的重叠比例 */
+    transform: translateY(-100px);
+    margin-bottom: -144px;
+    max-height: 12rem;
   }
 
   .query-btn,
