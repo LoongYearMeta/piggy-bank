@@ -54,7 +54,7 @@
           class="asset-card unfrozen-card"
         >
           <div class="asset-header">
-            <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} {{ t('amount_tbc') }}</div>
+            <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(2) }} {{ t('amount_tbc') }}</div>
             <button
               @click="unfreezeAsset(asset)"
               class="unfreeze-btn"
@@ -99,7 +99,7 @@
           class="asset-card frozen-card"
         >
           <div class="asset-header">
-            <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(6) }} TBC</div>
+            <div class="asset-amount">{{ (asset.satoshis / 1000000).toFixed(2) }} TBC</div>
             <div class="status-badge frozen">{{ t('not_matured') }}</div>
           </div>
           <div class="asset-info">

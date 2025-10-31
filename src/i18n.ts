@@ -84,6 +84,7 @@ const messages: Record<Locale, Record<string, string>> = {
     guide_notice_term: '存储期限以区块高度为准，到期时间与区块高度对应。',
     guide_notice_maturity: '未到期资产无法提取，需等待至到期后操作。',
     guide_notice_refresh: '钱包地址、余额及区块高度会实时更新，可通过 “点击获取地址” 刷新信息。',
+    guide_toggle_label: '查看更详细的使用说明',
   },
   en: {
     warning_wallet_not_installed: 'Please install Turing Wallet first',
@@ -166,6 +167,7 @@ const messages: Record<Locale, Record<string, string>> = {
     guide_notice_term: 'Deposit term is based on block height; maturity time corresponds to height.',
     guide_notice_maturity: 'Assets cannot be withdrawn before maturity.',
     guide_notice_refresh: 'Address, balance, and height update in real time; use “Click to get address” to refresh.',
+    guide_toggle_label: 'View detailed user guide',
   },
 }
 
