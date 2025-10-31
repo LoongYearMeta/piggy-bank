@@ -328,7 +328,12 @@ const handleDeposit = () => {
   font-size: 24px;
   font-weight: bold;
   margin: 0;
+  margin-bottom: 20px;
   word-break: break-word;
+  position: relative;
+  padding: 0 14px;
+  text-align: center;
+  display: block;
 }
 
 .query-btn {
@@ -379,11 +384,43 @@ const handleDeposit = () => {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--shadow-md);
+  text-align: center;
 }
 
 .deposit-section p {
   color: var(--color-text-primary);
   margin: 8px 0;
+}
+
+/* 冻结表单区域标题样式 - 添加左右蓝色小圆点 */
+.deposit-section .title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0;
+}
+
+.deposit-section .title:before {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-right: 18px;
+  flex-shrink: 0;
+}
+
+.deposit-section .title:after {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-left: 16px;
+  flex-shrink: 0;
 }
 
 .deposit-section button:first-of-type {

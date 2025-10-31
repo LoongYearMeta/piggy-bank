@@ -1,32 +1,30 @@
 <template>
   <div class="time-selected">
-    <div class="form-group">
-      <label class="label">{{ t('time_term') }}</label>
-      <!-- 触发按钮（淡蓝色），点击后弹出选项面板，按钮上回显选择结果 -->
-      <div class="select-trigger" ref="triggerRef">
-        <button type="button" class="trigger-btn" @click="togglePanel" :aria-expanded="isOpen">
-          <span>{{ selectedLabel || t('please_select_term') }}</span>
-          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6-6-6z"/>
-          </svg>
-        </button>
-        <Transition name="panel-fade">
-          <div v-if="isOpen" ref="panelRef" class="panel" :class="{ above: isAbove }" role="listbox" aria-label="选择存储期限" :style="panelInlineStyle">
-            <button
-              v-for="opt in options"
-              :key="opt.key"
-              type="button"
-              class="panel-item"
-              :class="{ active: opt.key === selectedKey }"
-              @click="pickAndClose(opt.key)"
-              :aria-selected="opt.key === selectedKey"
-              role="option"
-            >
-              {{ labelFor(opt.key) }}
-            </button>
-          </div>
-        </Transition>
-      </div>
+    <label class="label">{{ t('time_term') }}</label>
+    <!-- 触发按钮（淡蓝色），点击后弹出选项面板，按钮上回显选择结果 -->
+    <div class="select-trigger" ref="triggerRef">
+      <button type="button" class="trigger-btn" @click="togglePanel" :aria-expanded="isOpen">
+        <span>{{ selectedLabel || t('please_select_term') }}</span>
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6-6-6z"/>
+        </svg>
+      </button>
+      <Transition name="panel-fade">
+        <div v-if="isOpen" ref="panelRef" class="panel" :class="{ above: isAbove }" role="listbox" aria-label="选择存储期限" :style="panelInlineStyle">
+          <button
+            v-for="opt in options"
+            :key="opt.key"
+            type="button"
+            class="panel-item"
+            :class="{ active: opt.key === selectedKey }"
+            @click="pickAndClose(opt.key)"
+            :aria-selected="opt.key === selectedKey"
+            role="option"
+          >
+            {{ labelFor(opt.key) }}
+          </button>
+        </div>
+      </Transition>
     </div>
 
     <div class="row preview" v-if="selectedKey">
@@ -240,7 +238,6 @@ const lockBlockHeight = computed<number>(() => {
 .time-selected {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 /* 表单基础样式 */
