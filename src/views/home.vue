@@ -2,7 +2,7 @@
   <div class="home-container">
     <!-- 顶部导航 -->
     <header class="header">
-      <h1 class="title">{{ t('app_title') }}</h1>
+      <h2 class="title">{{ t('app_title') }}</h2>
       <div style="display:flex; gap:10px; align-items:center;">
         <button type="button" class="lang-btn" @click="toggleLocale">
           <span class="lang-text">{{ locale === 'zh' ? '中文' : 'English' }}</span>
@@ -291,6 +291,12 @@ const freezeTBC = async () => {
     if (!res) throw new Error("交易广播失败");
     // 冻结成功提示
     successMessage.value = t('deposit_success')
+    // 清空表单与错误
+    formData.depositAmount = 0
+    formData.lockTime = 0
+    errors.amountTipKey = ''
+    errors.timeTipKey = ''
+    submitErrorType.value = ''
     setTimeout(() => (successMessage.value = ''), 3000)
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
