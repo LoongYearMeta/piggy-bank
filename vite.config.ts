@@ -18,6 +18,11 @@ export default defineConfig({
         "process",
         "util",
       ],
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
     }),
   ],
   // 保留 Node 模块别名配置（解决浏览器缺失 buffer/stream 等模块）
@@ -29,7 +34,9 @@ export default defineConfig({
   // 保留全局变量映射（解决 browser 中没有 global 的问题）
   define: {
     global: "globalThis",
-    "process.env": JSON.stringify({}),
+    "process.env": "{}",
+    "process.version": JSON.stringify("v18.0.0"),
+    "process.browser": "true",
   },
   // 保留依赖预构建阶段的 esbuild 配置（确保 polyfill 在预构建时生效）
   optimizeDeps: {
