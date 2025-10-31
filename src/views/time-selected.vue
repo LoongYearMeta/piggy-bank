@@ -301,7 +301,7 @@ const lockBlockHeight = computed<number>(() => {
   border-radius: 10px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.06);
   padding: 8px;
-  z-index: 1000;
+  z-index: 3000;
   /* 自定义滚动条（不受浏览器主题影响） */
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: #a8ccff #ffffff; /* thumb track */

@@ -54,6 +54,8 @@
         </button>
       </form>
     </div>
+    <!-- 使用说明 -->
+    <Guide />
   </div>
   <!-- 全局提示 -->
   <Transition name="toast-success-fade">
@@ -68,6 +70,7 @@
 import { ref, reactive, watch, computed } from 'vue'
 import WalletInfo from '../components/wallet-info.vue'
 import TimeSelected from './time-selected.vue'
+import Guide from '../components/guide.vue'
 import { t, locale as localeRef, setLocale } from '../i18n'
 import { API } from 'tbc-contract'
 // @ts-ignore
@@ -385,6 +388,8 @@ const handleDeposit = () => {
   -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--shadow-md);
   text-align: center;
+  position: relative;
+  z-index: 2;
 }
 
 .deposit-section p {
