@@ -1,6 +1,6 @@
 <template>
   <section class="guide card">
-    <button type="button" class="guide__toggle" @click="isOpen = !isOpen" :aria-expanded="isOpen">
+    <button id="tour-guide-toggle" type="button" class="guide__toggle" @click="isOpen = !isOpen" :aria-expanded="isOpen">
       <span>{{ t('guide_toggle_label') }}</span>
       <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" :class="{ rotate: isOpen }">
         <path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6-6-6z"/>
@@ -49,6 +49,12 @@
             <li>{{ t('guide_notice_refresh') }}</li>
           </ul>
         </div>
+
+        <div class="guide__footer">
+          <button type="button" class="btn btn--pill" @click="$emit('restart-onboarding')">
+            {{ locale === 'zh' ? '重新查看新手引导' : 'Show onboarding again' }}
+          </button>
+        </div>
       </div>
     </Transition>
   </section>
@@ -56,9 +62,17 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { t } from '../i18n'
+import { t, locale } from '../i18n'
+
+defineEmits<{ (e: 'restart-onboarding'): void }>()
 
 const isOpen = ref(false)
+
+function close() {
+  isOpen.value = false
+}
+
+defineExpose({ close })
 </script>
 
 <style scoped>
@@ -112,6 +126,8 @@ const isOpen = ref(false)
 .guide__steps-title { color: var(--color-text-primary); margin: 6px 0 2px 0; }
 .guide__steps { padding-left: 18px; margin: 0; }
 .guide__steps li { margin: 4px 0; }
+
+.guide__footer { text-align: center; margin-top: 10px; }
 
 /* Collapse animation: smooth height + opacity */
 .guide-collapse-enter-from,

@@ -85,6 +85,25 @@ const messages: Record<Locale, Record<string, string>> = {
     guide_notice_maturity: '未到期资产无法提取，需等待至到期后操作。',
     guide_notice_refresh: '钱包地址、余额及区块高度会实时更新，可通过 “点击获取地址” 刷新信息。',
     guide_toggle_label: '查看更详细的使用说明',
+    // onboarding
+    tour_next: '下一步',
+    tour_prev: '上一步',
+    tour_skip: '跳过',
+    tour_finish: '完成',
+    tour_welcome_title: '欢迎使用本站！',
+    tour_welcome_desc: '接下来是本站的新手引导！重要提示：请确保在使用本站功能前已经安装了 Turing Wallet。',
+    tour_wallet_title: '钱包信息区',
+    tour_wallet_desc: '在这里可查看钱包地址、余额（TBC）和区块高度，并可点击“点击获取地址”刷新。',
+    tour_deposit_title: '存入资产功能区',
+    tour_deposit_desc: '输入金额、选择存储期限，点击“存入”完成操作。',
+    tour_guide_title: '说明文档',
+    tour_guide_desc: '想了解更多？点击“查看更详细的使用说明”展开文档。',
+    tour_done_title: '新手引导结束',
+    tour_done_desc: '感谢查看！现在开始尽情存钱吧～',
+    tour_lang_title: '选择语言',
+    tour_lang_desc: '请选择你希望查看的语言（可随时在顶部切换）',
+    tour_lang_zh: '中文',
+    tour_lang_en: 'English',
   },
   en: {
     warning_wallet_not_installed: 'Please install Turing Wallet first',
@@ -168,10 +187,29 @@ const messages: Record<Locale, Record<string, string>> = {
     guide_notice_maturity: 'Assets cannot be withdrawn before maturity.',
     guide_notice_refresh: 'Address, balance, and height update in real time; use “Click to get address” to refresh.',
     guide_toggle_label: 'View detailed user guide',
+    // onboarding
+    tour_next: 'Next',
+    tour_prev: 'Back',
+    tour_skip: 'Skip',
+    tour_finish: 'Finish',
+    tour_welcome_title: 'Welcome!',
+    tour_welcome_desc: 'Here is a quick onboarding. Important: Please install Turing Wallet before using the site.',
+    tour_wallet_title: 'Wallet Info',
+    tour_wallet_desc: 'View wallet address, balance (TBC), block height, and refresh via “Click to get address”.',
+    tour_deposit_title: 'Deposit Section',
+    tour_deposit_desc: 'Enter amount, select a term, then click “Deposit” to proceed.',
+    tour_guide_title: 'Guide Document',
+    tour_guide_desc: 'Want to know more? Click “View detailed user guide” to expand.',
+    tour_done_title: 'Onboarding Completed',
+    tour_done_desc: 'Thanks! You are ready to start saving.',
+    tour_lang_title: 'Choose Language',
+    tour_lang_desc: 'Pick your preferred language (you can change it anytime at the top).',
+    tour_lang_zh: '中文',
+    tour_lang_en: 'English',
   },
 }
 
-const stored = (localStorage.getItem('locale') as Locale) || 'zh'
+const stored = (localStorage.getItem('locale') as Locale) || 'en'
 export const locale = ref<Locale>(stored)
 
 export function setLocale(l: Locale) {

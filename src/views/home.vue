@@ -16,8 +16,10 @@
     <!-- logo图片 -->
     <img src="../assets/piggy-bank.svg" alt="piggy-bank" class="piggy-bank-img">
     <!-- 钱包信息区域 -->
-    <WalletInfo />
-    <div class="deposit-section">
+    <div id="tour-wallet">
+      <WalletInfo />
+    </div>
+    <div id="tour-deposit" class="deposit-section">
       <!-- 冻结资产表单 -->
       <h2 class="title">{{ t('deposit_section') }}</h2>
       <form @submit.prevent="handleDeposit" class="deposit-form">
@@ -55,7 +57,7 @@
       </form>
     </div>
     <!-- 使用说明 -->
-    <Guide />
+    <Guide ref="guideRef" @restart-onboarding="restartTour" />
   </div>
   <!-- 全局提示 -->
   <Transition name="toast-success-fade">
@@ -64,13 +66,26 @@
   <Transition name="toast-error-fade">
     <div class="toast-error" v-if="errorMessage">{{ errorMessage }}</div>
   </Transition>
+  <!-- Onboarding mount -->
+  <Onboarding
+    ref="onboardingRef"
+    :steps="[
+      { titleKey: 'tour_lang_title', descKey: 'tour_lang_desc' },
+      { titleKey: 'tour_welcome_title', descKey: 'tour_welcome_desc' },
+      { titleKey: 'tour_wallet_title', descKey: 'tour_wallet_desc', targetId: 'tour-wallet' },
+      { titleKey: 'tour_deposit_title', descKey: 'tour_deposit_desc', targetId: 'tour-deposit' },
+      { titleKey: 'tour_guide_title', descKey: 'tour_guide_desc', targetId: 'tour-guide-toggle' },
+      { titleKey: 'tour_done_title', descKey: 'tour_done_desc' }
+    ]"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
 import WalletInfo from '../components/wallet-info.vue'
 import TimeSelected from './time-selected.vue'
 import Guide from '../components/guide.vue'
+import Onboarding from '../components/onboarding.vue'
 import { t, locale as localeRef, setLocale } from '../i18n'
 import { API } from 'tbc-contract'
 // @ts-ignore
@@ -295,6 +310,23 @@ const handleDeposit = () => {
   if (!validateLockTime()) return
   freezeTBC()
 }
+
+// Onboarding integration
+const onboardingRef = ref<any>(null)
+const guideRef = ref<any>(null)
+const restartTour = () => {
+  guideRef.value?.close()
+  onboardingRef.value?.open(0)
+}
+
+onMounted(() => {
+  try {
+    const done = localStorage.getItem('onboarding_v1_done')
+    if (!done) {
+      setTimeout(() => onboardingRef.value?.open(0), 200)
+    }
+  } catch {}
+})
 
 </script>
 
