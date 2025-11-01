@@ -2,21 +2,38 @@
 import { onMounted, onUnmounted } from 'vue';
 import { useWalletStore } from './stores/wallet';
 
-// 定时检查账户变更的定时器
 let checkInterval: NodeJS.Timeout | null = null;
 
-// 组件挂载时启动账户变更检测
+// 组件挂载时检查钱包状态
 onMounted(() => {
-	// 在 onMounted 中获取 store，确保 Pinia 已初始化
 	const walletStore = useWalletStore();
-
-	// 初始检查
-	walletStore.checkAccountChange();
-
-	// 每3秒检查一次账户变更
-	checkInterval = setInterval(() => {
-		walletStore.checkAccountChange();
-	}, 3000);
+	
+	const checkWithRetry = () => {
+		if (window.Turing) {
+			walletStore.checkAccountChange();
+			
+			checkInterval = setInterval(() => {
+				walletStore.checkAccountChange();
+			}, 5000);
+		} else {
+			let retryCount = 0;
+			const retryInterval = setInterval(() => {
+				retryCount++;
+				if (window.Turing) {
+					clearInterval(retryInterval);
+					walletStore.checkAccountChange();
+					
+					checkInterval = setInterval(() => {
+						walletStore.checkAccountChange();
+					}, 5000);
+				} else if (retryCount >= 10) {
+					clearInterval(retryInterval);
+				}
+			}, 100);
+		}
+	};
+	
+	checkWithRetry();
 });
 
 // 组件卸载时清理定时器

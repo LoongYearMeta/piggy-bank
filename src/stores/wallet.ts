@@ -8,14 +8,16 @@ export const useWalletStore = defineStore('wallet', () => {
 	// 状态
 	const walletInfo = reactive({
 		curAddress: '', // 钱包地址
-		tbcBalance: 0, // 钱包余额
-		curBlockHeight: 0, // 当前区块高度
+		tbcBalance: null as number | null, // 钱包余额
+		curBlockHeight: null as number | null, // 当前区块高度
 	});
 
-	// 连接状态
+	// 加载状态
+	const isLoadingBalance = ref(false);
+	const isLoadingHeight = ref(false);
+
 	const isConnected = ref(false);
 
-	// 钱包是否准备好（是否安装）
 	const isReady = computed(() => {
 		return typeof window !== 'undefined' && !!window.Turing;
 	});
@@ -35,49 +37,72 @@ export const useWalletStore = defineStore('wallet', () => {
 			await window.Turing.connect();
 			const { tbcAddress } = await window.Turing.getAddress();
 
+			// 检查是否获取到地址
+			if (!tbcAddress) {
+				alert(t('warning_no_account'));
+				isConnected.value = false;
+				walletInfo.curAddress = '';
+				removeLocalStorage('tbcAddress');
+				return false;
+			}
+
 			// 检查是否与缓存地址不同（账户切换）
 			const cachedAddress = getLocalStorage('tbcAddress');
 			if (cachedAddress && cachedAddress !== tbcAddress) {
 				console.log('检测到新账户，更新缓存');
 			}
 
+			// 先设置 loading 状态，清空旧值
+			isLoadingBalance.value = true;
+			isLoadingHeight.value = true;
+			walletInfo.tbcBalance = null;
+			walletInfo.curBlockHeight = null;
+
+			// 立即显示地址
 			walletInfo.curAddress = tbcAddress;
 			isConnected.value = true;
 
 			// 保存地址到 localStorage（7天过期）
 			setLocalStorage('tbcAddress', tbcAddress, 1000 * 60 * 60 * 24 * 7);
 
-			// 获取到地址后，自动获取余额和区块高度
-			if (tbcAddress) {
-				await getBalance();
-				await getBlockHeight();
-			}
+			// 异步加载余额和高度
+			getBalance();
+			getBlockHeight();
 
 			return true;
 		} catch (error) {
 			console.error('获取钱包地址失败:', error);
 			isConnected.value = false;
+			walletInfo.curAddress = '';
+			removeLocalStorage('tbcAddress');
+			alert(t('warning_connect_failed'));
 			return false;
 		}
 	};
 
 	// 获取钱包余额
 	const getBalance = async () => {
+		isLoadingBalance.value = true;
 		try {
 			const tbc = await API.getTBCbalance(walletInfo.curAddress, network);
 			walletInfo.tbcBalance = tbc / 1000000;
 		} catch (error) {
 			console.error('获取钱包余额失败:', error);
+		} finally {
+			isLoadingBalance.value = false;
 		}
 	};
 
 	// 获取当前区块高度
 	const getBlockHeight = async () => {
+		isLoadingHeight.value = true;
 		try {
 			const res = await API.fetchBlockHeaders(network);
 			walletInfo.curBlockHeight = res[0]?.height || 0;
 		} catch (error) {
 			console.error('获取当前区块高度失败:', error);
+		} finally {
+			isLoadingHeight.value = false;
 		}
 	};
 
@@ -113,87 +138,88 @@ export const useWalletStore = defineStore('wallet', () => {
 		}
 
 		try {
-			// 直接获取地址（不触发 connect，避免弹窗）
+			// 获取地址
 			const { tbcAddress } = await window.Turing.getAddress();
 			const cachedAddress = getLocalStorage('tbcAddress');
 
-			console.log('[checkAccountChange] 当前地址:', tbcAddress);
-			console.log('[checkAccountChange] 缓存地址:', cachedAddress);
+			console.log('[checkAccountChange] ========== 开始检查 ==========');
+			console.log('[checkAccountChange] tbcAddress:', tbcAddress);
+			console.log('[checkAccountChange] cachedAddress:', cachedAddress);
+			console.log('[checkAccountChange] tbcAddress 类型:', typeof tbcAddress);
+			console.log('[checkAccountChange] cachedAddress 类型:', typeof cachedAddress);
+			console.log('[checkAccountChange] 是否相等:', tbcAddress === cachedAddress);
+			console.log('[checkAccountChange] 条件1 (tbcAddress):', !!tbcAddress);
+			console.log('[checkAccountChange] 条件2 (cachedAddress):', !!cachedAddress);
+			console.log('[checkAccountChange] 条件3 (相等):', cachedAddress === tbcAddress);
+			console.log('[checkAccountChange] 最终判断:', tbcAddress && cachedAddress && cachedAddress === tbcAddress);
 
-			// 如果钱包能获取到地址，说明用户已经授权过
-			if (tbcAddress) {
-				// 情况1: 有缓存地址，且当前地址与缓存一致 - 保持连接
-				if (cachedAddress && cachedAddress === tbcAddress) {
-					if (!isConnected.value || walletInfo.curAddress !== tbcAddress) {
-						console.log('[checkAccountChange] 自动恢复连接状态:', tbcAddress);
-						walletInfo.curAddress = tbcAddress;
-						isConnected.value = true;
-						// 更新余额和区块高度
-						await getBalance();
-						await getBlockHeight();
-					}
-					return false; // 账户未变更
-				}
+			// 关键逻辑：只有当 tbcAddress && cachedAddress && 两者相等时才连接
+			if (tbcAddress && cachedAddress && cachedAddress === tbcAddress) {
+				console.log('[checkAccountChange] ✅ 地址匹配，自动连接');
+				// 先设置 loading 状态，清空旧值
+				isLoadingBalance.value = true;
+				isLoadingHeight.value = true;
+				walletInfo.tbcBalance = null;
+				walletInfo.curBlockHeight = null;
 
-				// 情况2: 有缓存地址，但当前地址与缓存不一致 - 账户已切换，自动切换到新账户
-				if (cachedAddress && cachedAddress !== tbcAddress) {
-					console.log(
-						'[checkAccountChange] 检测到账户切换，自动连接新账户: ',
-						cachedAddress,
-						'->',
-						tbcAddress,
-					);
-					// 更新为新账户
-					walletInfo.curAddress = tbcAddress;
-					isConnected.value = true;
-					// 保存新地址到缓存（7天过期）
-					setLocalStorage('tbcAddress', tbcAddress, 1000 * 60 * 60 * 24 * 7);
-					// 更新余额和区块高度
-					await getBalance();
-					await getBlockHeight();
-					return true; // 账户已变更
-				}
+				// 显示地址并连接
+				walletInfo.curAddress = tbcAddress;
+				isConnected.value = true;
+				
+				// 异步加载余额和高度
+				getBalance();
+				getBlockHeight();
+			} else if (tbcAddress && cachedAddress && cachedAddress !== tbcAddress) {
+				console.log('[checkAccountChange] ✅ 地址不匹配，自动切换到新账户');
+				// 先设置 loading 状态，清空旧值
+				isLoadingBalance.value = true;
+				isLoadingHeight.value = true;
+				walletInfo.tbcBalance = null;
+				walletInfo.curBlockHeight = null;
 
-				// 情况3: 没有缓存地址，但钱包能返回地址 - 自动连接并保存缓存
-				if (!cachedAddress) {
-					console.log('[checkAccountChange] 检测到已授权钱包，自动连接:', tbcAddress);
-					walletInfo.curAddress = tbcAddress;
-					isConnected.value = true;
-					// 保存到缓存（7天过期）
-					setLocalStorage('tbcAddress', tbcAddress, 1000 * 60 * 60 * 24 * 7);
-					// 更新余额和区块高度
-					await getBalance();
-					await getBlockHeight();
-					return false;
-				}
+				// 显示新地址并连接
+				walletInfo.curAddress = tbcAddress;
+				isConnected.value = true;
+				
+				// 更新缓存
+				setLocalStorage('tbcAddress', tbcAddress, 1000 * 60 * 60 * 24 * 7);
+				
+				// 异步加载余额和高度
+				getBalance();
+				getBlockHeight();
+			} else if (tbcAddress && !cachedAddress) {
+				console.log('[checkAccountChange] ✅ 无缓存，自动连接');
+				// 先设置 loading 状态，清空旧值
+				isLoadingBalance.value = true;
+				isLoadingHeight.value = true;
+				walletInfo.tbcBalance = null;
+				walletInfo.curBlockHeight = null;
+
+				// 显示地址并连接
+				walletInfo.curAddress = tbcAddress;
+				isConnected.value = true;
+				
+				// 保存到缓存
+				setLocalStorage('tbcAddress', tbcAddress, 1000 * 60 * 60 * 24 * 7);
+				
+				// 异步加载余额和高度
+				getBalance();
+				getBlockHeight();
 			} else {
-				// 钱包无法返回地址（未授权或钱包未安装）
-				console.log('[checkAccountChange] 钱包无法返回地址，当前连接状态:', isConnected.value);
-				if (isConnected.value) {
-					await disconnect();
-				}
+				console.log('[checkAccountChange] ❌ 没有地址，断开连接并清除缓存');
+				// 没有地址：断开连接并清除缓存
+				isConnected.value = false;
+				walletInfo.curAddress = '';
+				removeLocalStorage('tbcAddress');
 			}
-
-			return false;
+			
+			return true;
 		} catch (error: any) {
-			// 检测到 Unauthorized 错误，说明钱包未授权，自动调用 connect
-			if (error?.message === 'Unauthorized!' || error === 'Unauthorized!') {
-				const cachedAddress = getLocalStorage('tbcAddress');
-				// 只有在没有缓存时才自动连接（避免频繁弹窗）
-				if (!cachedAddress) {
-					console.log('[checkAccountChange] 检测到未授权且无缓存，自动发起连接请求');
-					// 自动调用 getAddress，它会先调用 connect() 弹窗授权
-					await getAddress();
-					return false;
-				} else {
-					// 有缓存但未授权，静默等待（可能钱包扩展被禁用了）
-					console.log('[checkAccountChange] 钱包未授权但有缓存，等待用户手动连接');
-					return false;
-				}
-			}
-
-			// 其他错误才记录
-			console.error('[checkAccountChange] 检查账户变更失败:', error);
+			console.log('[checkAccountChange] ❌ 发生错误:', error);
+			// 发生错误：断开连接并清除缓存
+			isConnected.value = false;
+			walletInfo.curAddress = '';
+			removeLocalStorage('tbcAddress');
 			return false;
 		}
 	};
@@ -202,6 +228,8 @@ export const useWalletStore = defineStore('wallet', () => {
 		walletInfo,
 		isConnected,
 		isReady,
+		isLoadingBalance,
+		isLoadingHeight,
 		getAddress,
 		getBalance,
 		getBlockHeight,

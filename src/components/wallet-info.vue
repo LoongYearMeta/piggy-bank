@@ -10,11 +10,13 @@
 			</div>
 			<div class="form-group">
 				<label>{{ t('current_balance') }}</label>
-				<input v-model="walletInfo.tbcBalance" disabled />
+				<input v-if="isLoadingBalance" value="加载中..." disabled />
+				<input v-else v-model="walletInfo.tbcBalance" disabled />
 			</div>
 			<div class="form-group">
 				<label>{{ t('current_height') }}</label>
-				<input v-model="walletInfo.curBlockHeight" disabled />
+				<input v-if="isLoadingHeight" value="加载中..." disabled />
+				<input v-else v-model="walletInfo.curBlockHeight" disabled />
 			</div>
 		</template>
 	</div>
@@ -27,11 +29,11 @@ import { useWalletStore } from '../stores/wallet';
 
 // 使用 Pinia store
 const walletStore = useWalletStore();
-const { walletInfo, getAddress, getBalance, getBlockHeight, getWalletInfo } = walletStore;
+const { walletInfo, isLoadingBalance, isLoadingHeight, getAddress, getBalance, getBlockHeight, getWalletInfo } = walletStore;
 
-// 组件挂载时静默检查钱包状态
-onMounted(async () => {
-	await getWalletInfo();
+// 组件挂载时静默检查钱包状态（不阻塞渲染）
+onMounted(() => {
+	getWalletInfo();
 });
 
 // 暴露方法供父组件调用

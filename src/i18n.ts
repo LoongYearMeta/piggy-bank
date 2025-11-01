@@ -5,6 +5,8 @@ export type Locale = 'zh' | 'en';
 const messages: Record<Locale, Record<string, string>> = {
 	zh: {
 		warning_wallet_not_installed: '请先安装Turing钱包',
+		warning_no_account: '钱包中没有账户，请先创建账户',
+		warning_connect_failed: '连接失败，请确保已创建钱包账户',
 		app_title: '存钱罐',
 		nav_details: '存储明细',
 		back: '返回',
@@ -112,6 +114,8 @@ const messages: Record<Locale, Record<string, string>> = {
 	},
 	en: {
 		warning_wallet_not_installed: 'Please install Turing Wallet first',
+		warning_no_account: 'No account found in wallet, please create an account first',
+		warning_connect_failed: 'Connection failed, please ensure you have created a wallet account',
 		app_title: 'Piggy Bank',
 		nav_details: 'Deposit Details',
 		back: 'Back',
