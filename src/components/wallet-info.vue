@@ -10,12 +10,12 @@
 			</div>
 			<div class="form-group">
 				<label>{{ t('current_balance') }}</label>
-				<input v-if="isLoadingBalance" :value="t('loading')" disabled />
+				<input v-if="isLoadingBalance || walletInfo.tbcBalance === null" :value="t('loading')" disabled />
 				<input v-else v-model="walletInfo.tbcBalance" disabled />
 			</div>
 			<div class="form-group">
 				<label>{{ t('current_height') }}</label>
-				<input v-if="isLoadingHeight" :value="t('loading')" disabled />
+				<input v-if="isLoadingHeight || walletInfo.curBlockHeight === null" :value="t('loading')" disabled />
 				<input v-else v-model="walletInfo.curBlockHeight" disabled />
 			</div>
 		</template>

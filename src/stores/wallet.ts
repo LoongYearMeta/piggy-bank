@@ -133,7 +133,6 @@ export const useWalletStore = defineStore('wallet', () => {
 	// 检查钱包账户是否变更
 	const checkAccountChange = async (): Promise<boolean> => {
 		if (!window.Turing) {
-			console.log('[checkAccountChange] 钱包未安装');
 			return false;
 		}
 
@@ -142,83 +141,46 @@ export const useWalletStore = defineStore('wallet', () => {
 			const { tbcAddress } = await window.Turing.getAddress();
 			const cachedAddress = getLocalStorage('tbcAddress');
 
-			console.log('[checkAccountChange] ========== 开始检查 ==========');
-			console.log('[checkAccountChange] tbcAddress:', tbcAddress);
-			console.log('[checkAccountChange] cachedAddress:', cachedAddress);
-			console.log('[checkAccountChange] tbcAddress 类型:', typeof tbcAddress);
-			console.log('[checkAccountChange] cachedAddress 类型:', typeof cachedAddress);
-			console.log('[checkAccountChange] 是否相等:', tbcAddress === cachedAddress);
-			console.log('[checkAccountChange] 条件1 (tbcAddress):', !!tbcAddress);
-			console.log('[checkAccountChange] 条件2 (cachedAddress):', !!cachedAddress);
-			console.log('[checkAccountChange] 条件3 (相等):', cachedAddress === tbcAddress);
-			console.log('[checkAccountChange] 最终判断:', tbcAddress && cachedAddress && cachedAddress === tbcAddress);
-
-			// 关键逻辑：只有当 tbcAddress && cachedAddress && 两者相等时才连接
-			if (tbcAddress && cachedAddress && cachedAddress === tbcAddress) {
-				console.log('[checkAccountChange] ✅ 地址匹配，自动连接');
-				// 先设置 loading 状态，清空旧值
+			// 情况1: 有地址 && 有缓存 && 地址匹配 && 未连接 -> 恢复连接
+			if (tbcAddress && cachedAddress && cachedAddress === tbcAddress && !isConnected.value) {
 				isLoadingBalance.value = true;
 				isLoadingHeight.value = true;
 				walletInfo.tbcBalance = null;
 				walletInfo.curBlockHeight = null;
-
-				// 显示地址并连接
 				walletInfo.curAddress = tbcAddress;
 				isConnected.value = true;
 				
-				// 异步加载余额和高度
 				getBalance();
 				getBlockHeight();
-			} else if (tbcAddress && cachedAddress && cachedAddress !== tbcAddress) {
-				console.log('[checkAccountChange] ✅ 地址不匹配，自动切换到新账户');
-				// 先设置 loading 状态，清空旧值
+			}
+			// 情况2: 有地址 && 地址变化（缓存不同或当前显示不同）-> 切换账户
+			else if (tbcAddress && (cachedAddress !== tbcAddress || walletInfo.curAddress !== tbcAddress)) {
 				isLoadingBalance.value = true;
 				isLoadingHeight.value = true;
 				walletInfo.tbcBalance = null;
 				walletInfo.curBlockHeight = null;
-
-				// 显示新地址并连接
 				walletInfo.curAddress = tbcAddress;
 				isConnected.value = true;
 				
-				// 更新缓存
 				setLocalStorage('tbcAddress', tbcAddress, 1000 * 60 * 60 * 24 * 7);
 				
-				// 异步加载余额和高度
 				getBalance();
 				getBlockHeight();
-			} else if (tbcAddress && !cachedAddress) {
-				console.log('[checkAccountChange] ✅ 无缓存，自动连接');
-				// 先设置 loading 状态，清空旧值
-				isLoadingBalance.value = true;
-				isLoadingHeight.value = true;
-				walletInfo.tbcBalance = null;
-				walletInfo.curBlockHeight = null;
-
-				// 显示地址并连接
-				walletInfo.curAddress = tbcAddress;
-				isConnected.value = true;
-				
-				// 保存到缓存
-				setLocalStorage('tbcAddress', tbcAddress, 1000 * 60 * 60 * 24 * 7);
-				
-				// 异步加载余额和高度
-				getBalance();
-				getBlockHeight();
-			} else {
-				console.log('[checkAccountChange] ❌ 没有地址，断开连接并清除缓存');
-				// 没有地址：断开连接并清除缓存
+			}
+			else if (!tbcAddress) {
 				isConnected.value = false;
 				walletInfo.curAddress = '';
+				walletInfo.tbcBalance = null;
+				walletInfo.curBlockHeight = null;
 				removeLocalStorage('tbcAddress');
 			}
 			
 			return true;
 		} catch (error: any) {
-			console.log('[checkAccountChange] ❌ 发生错误:', error);
-			// 发生错误：断开连接并清除缓存
 			isConnected.value = false;
 			walletInfo.curAddress = '';
+			walletInfo.tbcBalance = null;
+			walletInfo.curBlockHeight = null;
 			removeLocalStorage('tbcAddress');
 			return false;
 		}
