@@ -46,12 +46,6 @@ export const useWalletStore = defineStore('wallet', () => {
 				return false;
 			}
 
-			// 检查是否与缓存地址不同（账户切换）
-			const cachedAddress = getLocalStorage('tbcAddress');
-			if (cachedAddress && cachedAddress !== tbcAddress) {
-				console.log('检测到新账户，更新缓存');
-			}
-
 			// 先设置 loading 状态，清空旧值
 			isLoadingBalance.value = true;
 			isLoadingHeight.value = true;
