@@ -14,7 +14,7 @@ onMounted(() => {
 			
 			checkInterval = setInterval(() => {
 				walletStore.checkAccountChange();
-			}, 5000);
+			}, 3000);
 		} else {
 			let retryCount = 0;
 			const retryInterval = setInterval(() => {
@@ -25,7 +25,7 @@ onMounted(() => {
 					
 					checkInterval = setInterval(() => {
 						walletStore.checkAccountChange();
-					}, 5000);
+					}, 3000);
 				} else if (retryCount >= 10) {
 					clearInterval(retryInterval);
 				}

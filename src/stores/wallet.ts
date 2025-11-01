@@ -82,12 +82,12 @@ export const useWalletStore = defineStore('wallet', () => {
 
 	// 获取钱包余额
 	const getBalance = async () => {
-		isLoadingBalance.value = true;
 		try {
 			const tbc = await API.getTBCbalance(walletInfo.curAddress, network);
 			walletInfo.tbcBalance = tbc / 1000000;
 		} catch (error) {
 			console.error('获取钱包余额失败:', error);
+			walletInfo.tbcBalance = 0;
 		} finally {
 			isLoadingBalance.value = false;
 		}
@@ -95,12 +95,12 @@ export const useWalletStore = defineStore('wallet', () => {
 
 	// 获取当前区块高度
 	const getBlockHeight = async () => {
-		isLoadingHeight.value = true;
 		try {
 			const res = await API.fetchBlockHeaders(network);
 			walletInfo.curBlockHeight = res[0]?.height || 0;
 		} catch (error) {
 			console.error('获取当前区块高度失败:', error);
+			walletInfo.curBlockHeight = 0;
 		} finally {
 			isLoadingHeight.value = false;
 		}
