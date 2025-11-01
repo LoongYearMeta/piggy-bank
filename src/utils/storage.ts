@@ -56,4 +56,3 @@ export function removeLocalStorage(key: string) {
 export function clearLocalStorage() {
 	localStorage.clear();
 }
-

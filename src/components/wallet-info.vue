@@ -29,7 +29,7 @@ import { useWalletStore } from '../stores/wallet';
 const walletStore = useWalletStore();
 const { walletInfo, getAddress, getBalance, getBlockHeight, getWalletInfo } = walletStore;
 
-// 组件挂载时自动获取钱包信息
+// 组件挂载时静默检查钱包状态
 onMounted(async () => {
 	await getWalletInfo();
 });

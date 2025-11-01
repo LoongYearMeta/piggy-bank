@@ -2,13 +2,14 @@
 import { onMounted, onUnmounted } from 'vue';
 import { useWalletStore } from './stores/wallet';
 
-const walletStore = useWalletStore();
-
 // 定时检查账户变更的定时器
 let checkInterval: NodeJS.Timeout | null = null;
 
 // 组件挂载时启动账户变更检测
 onMounted(() => {
+	// 在 onMounted 中获取 store，确保 Pinia 已初始化
+	const walletStore = useWalletStore();
+
 	// 初始检查
 	walletStore.checkAccountChange();
 
@@ -27,7 +28,7 @@ onUnmounted(() => {
 });
 </script>
 
-<template>         
+<template>
 	<div id="app">
 		<router-view />
 	</div>
