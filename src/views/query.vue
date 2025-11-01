@@ -43,7 +43,7 @@
       <p class="section-description">{{ t('tip_storage_term') }}</p>
       <div v-if="unfrozenAssets.length === 0" class="empty-state">
         <!-- <div class="empty-icon">🔒</div> -->
-        <img src="../assets/empty.svg" class="empty-icon"></img>
+        <img src="../assets/empty.svg" class="empty-icon" />
         <p>{{ t('list_unfrozen_empty') }}</p>
       </div>
 
@@ -88,7 +88,7 @@
       <h2 class="section-title">{{ t('list_frozen_title') }}</h2>
       <p class="section-description">{{ t('tip_storage_term') }}</p>
       <div v-if="frozenAssets.length === 0" class="empty-state">
-        <img src="../assets/empty.svg" class="empty-icon"></img>
+        <img src="../assets/empty.svg" class="empty-icon" />
         <p>{{ t('list_frozen_empty') }}</p>
       </div>
 

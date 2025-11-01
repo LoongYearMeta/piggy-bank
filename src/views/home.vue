@@ -1,779 +1,787 @@
 <template>
-  <div class="home-container">
-    <!-- 顶部导航 -->
-    <header class="header">
-      <h2 class="title">{{ t('app_title') }}</h2>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <button type="button" class="lang-btn" @click="toggleLocale">
-          <span class="lang-text">{{ locale === 'zh' ? '中文' : 'English' }}</span>
-          <span class="lang-dot" />
-        </button>
-        <router-link to="/query" class="lang-btn">
-          {{ t('nav_details') }}
-        </router-link>
-      </div>
-    </header>
-    <!-- logo图片 -->
-    <img src="../assets/piggy-bank.png" alt="piggy-bank" class="piggy-bank-img">
-    <!-- 钱包信息区域 -->
-    <div id="tour-wallet">
-      <WalletInfo />
-    </div>
-    <div id="tour-deposit" class="deposit-section">
-      <!-- 冻结资产表单 -->
-      <h2 class="title">{{ t('deposit_section') }}</h2>
-      <form @submit.prevent="handleDeposit" class="deposit-form">
-        <!-- 冻结金额 -->
-        <div class="form-group">
-          <label for="amount">{{ t('amount_label') }}</label>
-          <input
-            :class="errors.amountTipKey ? 'error-input' : ''"
-            id="amount"
-            v-model.number="formData.depositAmount"
-            :placeholder="t('input_amount_placeholder')"
-            @input="validateAmount"
-          />
-          <Transition name="error-fade">
-            <span class="error-message" v-if="amountTip">{{ amountTip }}</span>
-          </Transition>
-        </div>
-        <div class="form-group">
-          <!-- 新的期限选择组件 -->
-          <TimeSelected
-            :address="curAddress"
-            :network="network"
-            @update:lockTime="handleLockTimeChange"
-          />
-          <Transition name="error-fade">
-            <span class="error-message" v-if="timeTip">{{ timeTip }}</span>
-          </Transition>
-        </div>
-        <Transition name="error-fade">
-          <span class="error-message" v-if="submitError">{{ submitError }}</span>
-        </Transition>
-        <button type="submit" class="deposit-btn" :disabled="!formData.depositAmount || formData.depositAmount <= 0">
-          {{ t('submit_deposit') }}
-        </button>
-      </form>
-    </div>
-    <!-- 使用说明 -->
-    <Guide ref="guideRef" @restart-onboarding="restartTour" />
-  </div>
-  <!-- 全局提示 -->
-  <Transition name="toast-success-fade">
-    <div class="toast-success" v-if="successMessage">{{ successMessage }}</div>
-  </Transition>
-  <Transition name="toast-error-fade">
-    <div class="toast-error" v-if="errorMessage">{{ errorMessage }}</div>
-  </Transition>
-  <!-- Onboarding mount -->
-  <Onboarding
-    ref="onboardingRef"
-    :steps="[
-      { titleKey: 'tour_ask_title', descKey: 'tour_ask_desc' },
-      { titleKey: 'tour_lang_title', descKey: 'tour_lang_desc' },
-      { titleKey: 'tour_welcome_title', descKey: 'tour_welcome_desc' },
-      { titleKey: 'tour_wallet_title', descKey: 'tour_wallet_desc', targetId: 'tour-wallet' },
-      { titleKey: 'tour_deposit_title', descKey: 'tour_deposit_desc', targetId: 'tour-deposit' },
-      { titleKey: 'tour_guide_title', descKey: 'tour_guide_desc', targetId: 'tour-guide-toggle' },
-      { titleKey: 'tour_done_title', descKey: 'tour_done_desc' }
-    ]"
-  />
+	<div class="home-container">
+		<!-- 顶部导航 -->
+		<header class="header">
+			<h2 class="title">{{ t('app_title') }}</h2>
+			<div style="display: flex; gap: 10px; align-items: center">
+				<button type="button" class="lang-btn" @click="toggleLocale">
+					<span class="lang-text">{{ locale === 'zh' ? '中文' : 'English' }}</span>
+					<span class="lang-dot" />
+				</button>
+				<router-link to="/query" class="lang-btn">
+					{{ t('nav_details') }}
+				</router-link>
+			</div>
+		</header>
+		<!-- logo图片 -->
+		<img src="../assets/piggy-bank.png" alt="piggy-bank" class="piggy-bank-img" />
+		<!-- 钱包信息区域 -->
+		<div id="tour-wallet">
+			<WalletInfo />
+		</div>
+		<div id="tour-deposit" class="deposit-section">
+			<!-- 冻结资产表单 -->
+			<h2 class="title">{{ t('deposit_section') }}</h2>
+			<form @submit.prevent="handleDeposit" class="deposit-form">
+				<!-- 冻结金额 -->
+				<div class="form-group">
+					<label for="amount">{{ t('amount_label') }}</label>
+					<input
+						:class="errors.amountTipKey ? 'error-input' : ''"
+						id="amount"
+						v-model.number="formData.depositAmount"
+						:placeholder="t('input_amount_placeholder')"
+						@input="validateAmount"
+					/>
+					<Transition name="error-fade">
+						<span class="error-message" v-if="amountTip">{{ amountTip }}</span>
+					</Transition>
+				</div>
+				<div class="form-group">
+					<!-- 新的期限选择组件 -->
+					<TimeSelected
+						:address="curAddress"
+						:network="network"
+						@update:lockTime="handleLockTimeChange"
+					/>
+					<Transition name="error-fade">
+						<span class="error-message" v-if="timeTip">{{ timeTip }}</span>
+					</Transition>
+				</div>
+				<Transition name="error-fade">
+					<span class="error-message" v-if="submitError">{{ submitError }}</span>
+				</Transition>
+				<button
+					type="submit"
+					class="deposit-btn"
+					:disabled="!formData.depositAmount || formData.depositAmount <= 0"
+				>
+					{{ t('submit_deposit') }}
+				</button>
+			</form>
+		</div>
+		<!-- 使用说明 -->
+		<Guide ref="guideRef" @restart-onboarding="restartTour" />
+	</div>
+	<!-- 全局提示 -->
+	<Transition name="toast-success-fade">
+		<div class="toast-success" v-if="successMessage">{{ successMessage }}</div>
+	</Transition>
+	<Transition name="toast-error-fade">
+		<div class="toast-error" v-if="errorMessage">{{ errorMessage }}</div>
+	</Transition>
+	<!-- Onboarding mount -->
+	<Onboarding
+		ref="onboardingRef"
+		:steps="[
+			{ titleKey: 'tour_ask_title', descKey: 'tour_ask_desc' },
+			{ titleKey: 'tour_lang_title', descKey: 'tour_lang_desc' },
+			{ titleKey: 'tour_welcome_title', descKey: 'tour_welcome_desc' },
+			{ titleKey: 'tour_wallet_title', descKey: 'tour_wallet_desc', targetId: 'tour-wallet' },
+			{ titleKey: 'tour_deposit_title', descKey: 'tour_deposit_desc', targetId: 'tour-deposit' },
+			{ titleKey: 'tour_guide_title', descKey: 'tour_guide_desc', targetId: 'tour-guide-toggle' },
+			{ titleKey: 'tour_done_title', descKey: 'tour_done_desc' },
+		]"
+	/>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed, onMounted } from 'vue'
-import WalletInfo from '../components/wallet-info.vue'
-import TimeSelected from './time-selected.vue'
-import Guide from '../components/guide.vue'
-import Onboarding from '../components/onboarding.vue'
-import { t, locale as localeRef, setLocale } from '../i18n'
-import { API } from 'tbc-contract'
+import { ref, reactive, watch, computed, onMounted } from 'vue';
+import WalletInfo from '../components/wallet-info.vue';
+import TimeSelected from './time-selected.vue';
+import Guide from '../components/guide.vue';
+import Onboarding from '../components/onboarding.vue';
+import { t, locale as localeRef, setLocale } from '../i18n';
+import { API } from 'tbc-contract';
 // @ts-ignore
-import piggyBank from 'tbc-contract/lib/contract/piggyBank.js'
-import { Regex } from '../utils/reg'
-import * as tbc from "tbc-lib-js"
-import { useWalletStore } from '../stores/wallet'
+import piggyBank from 'tbc-contract/lib/contract/piggyBank.js';
+import { Regex } from '../utils/reg';
+import * as tbc from 'tbc-lib-js';
+import { useWalletStore } from '../stores/wallet';
 
 // 类型定义-错误提示信息
 interface Errors {
-  amountTipKey: string // 存储错误键而不是错误文本
-  timeTipKey: string // 存储错误键而不是错误文本
+	amountTipKey: string; // 存储错误键而不是错误文本
+	timeTipKey: string; // 存储错误键而不是错误文本
 }
 
 // 响应式数据
-const network = import.meta.env.VITE_NETWORK || undefined // 网络环境
+const network = import.meta.env.VITE_NETWORK || undefined; // 网络环境
 // 表单数据-冻结
 const formData = reactive({
-  depositAmount: 0, // 冻结金额
-  lockTime: 0, // 冻结时间（换算为区块高度）
-})
+	depositAmount: 0, // 冻结金额
+	lockTime: 0, // 冻结时间（换算为区块高度）
+});
 
 // 使用 Pinia store 管理钱包信息
-const walletStore = useWalletStore()
-const { walletInfo } = walletStore
+const walletStore = useWalletStore();
+const { walletInfo } = walletStore;
 
 // 为了保持向后兼容，创建别名
-const curAddress = computed(() => walletInfo.curAddress || '')
-const tbcBalance = computed(() => walletInfo.tbcBalance || 0)
-const curBlockHeight = computed(() => walletInfo.curBlockHeight || 0)
+const curAddress = computed(() => walletInfo.curAddress || '');
+const tbcBalance = computed(() => walletInfo.tbcBalance || 0);
+const curBlockHeight = computed(() => walletInfo.curBlockHeight || 0);
 
-const errors = reactive<Errors>({ // 错误提示
-  amountTipKey: '',
-  timeTipKey: ''
-})
+const errors = reactive<Errors>({
+	// 错误提示
+	amountTipKey: '',
+	timeTipKey: '',
+});
 
 // 使用计算属性动态获取错误文本
-const amountTip = computed(() => errors.amountTipKey ? t(errors.amountTipKey) : '')
-const timeTip = computed(() => errors.timeTipKey ? t(errors.timeTipKey) : '')
+const amountTip = computed(() => (errors.amountTipKey ? t(errors.amountTipKey) : ''));
+const timeTip = computed(() => (errors.timeTipKey ? t(errors.timeTipKey) : ''));
 
 // 提交阶段统一错误 - 使用计算属性来存储错误类型而不是错误文本
-const submitErrorType = ref('')
+const submitErrorType = ref('');
 const submitError = computed(() => {
-  return submitErrorType.value ? t(submitErrorType.value) : ''
-})
+	return submitErrorType.value ? t(submitErrorType.value) : '';
+});
 
 // 成功和错误消息
-const successMessage = ref('')
-const errorMessage = ref('')
+const successMessage = ref('');
+const errorMessage = ref('');
 
 // 语言
-const locale = localeRef
+const locale = localeRef;
 
 // 切换语言
 function toggleLocale() {
-  setLocale(locale.value === 'zh' ? 'en' : 'zh')
+	setLocale(locale.value === 'zh' ? 'en' : 'zh');
 }
 
 // 监听金额变化，实时校验
 watch(
-  () => formData.depositAmount, // 监听formData中的depositAmount属性
-  () => {
-    validateAmount()
-  }
-)
+	() => formData.depositAmount, // 监听formData中的depositAmount属性
+	() => {
+		validateAmount();
+	},
+);
 
 // 监听冻结时间变化，实时校验
 watch(
-  () => formData.lockTime, // 监听formData中的lockTime属性
-  () => {
-    validateLockTime()
-  }
-)
+	() => formData.lockTime, // 监听formData中的lockTime属性
+	() => {
+		validateLockTime();
+	},
+);
 
 // 处理lockTime变化
 const handleLockTimeChange = (lockTime: number) => {
-  formData.lockTime = lockTime
-}
+	formData.lockTime = lockTime;
+};
 
 // 冻结金额校验规则
 const validateAmount = (): boolean => {
-  errors.amountTipKey = ''
-  const depositAmount = formData.depositAmount
-  // 非空校验
-  if (!depositAmount) {
-    errors.amountTipKey = 'err_enter_amount'
-    return false
-  }
-  // 正则校验
-  const amountStr = depositAmount.toString()
-  if (!Regex.freezeAmountReg.test(amountStr)) {
-    errors.amountTipKey = 'err_amount_format'
-    return false
-  }
-  // 金额校验
-  if (depositAmount > tbcBalance.value) {
-    errors.amountTipKey = 'err_amount_exceed_balance'
-    return false
-  }
-  return true
-}
+	errors.amountTipKey = '';
+	const depositAmount = formData.depositAmount;
+	// 非空校验
+	if (!depositAmount) {
+		errors.amountTipKey = 'err_enter_amount';
+		return false;
+	}
+	// 正则校验
+	const amountStr = depositAmount.toString();
+	if (!Regex.freezeAmountReg.test(amountStr)) {
+		errors.amountTipKey = 'err_amount_format';
+		return false;
+	}
+	// 金额校验
+	if (depositAmount > tbcBalance.value) {
+		errors.amountTipKey = 'err_amount_exceed_balance';
+		return false;
+	}
+	return true;
+};
 
 // 冻结时间校验规则
 const validateLockTime = (): boolean => {
-  errors.timeTipKey = ''
-  const lockTime = formData.lockTime
-  // 检查是否选择了冻结时间
-  if (!lockTime) {
-    errors.timeTipKey = 'err_select_time'
-    return false
-  }
-  return true
-}
+	errors.timeTipKey = '';
+	const lockTime = formData.lockTime;
+	// 检查是否选择了冻结时间
+	if (!lockTime) {
+		errors.timeTipKey = 'err_select_time';
+		return false;
+	}
+	return true;
+};
 
 // 钱包数据获取方法已移到 WalletInfo 组件
 
 // 构造冻结资产交易
 const freezeTBC = async () => {
-  const tbcNumber = formData.depositAmount
-  const tbcAmount = Math.ceil(formData.depositAmount * Math.pow(10, 6));
-  const lockTime = formData.lockTime
-  try {
-    // 参数校验
-    const address = curAddress.value
-    const blockHeight = curBlockHeight.value
-    if (!address) throw new Error("钱包地址未获取");
-    if (!lockTime || lockTime <= blockHeight) throw new Error("锁定区块高度无效（需大于当前区块）");
-    if (!tbcAmount || tbcAmount <= 0) throw new Error("冻结金额无效");
-    // 参数准备-UTXO的金额和锁定脚本
-    const { tbcPubKey } = await window.Turing.getPubKey();
-    // 获取公钥
-    const publicKey = new tbc.PublicKey(tbcPubKey);
-    const utxos_satoshis: number[][] = [[], []] // 二维数组：[[第一个交易的UTXO金额]]
-    const script_pubkeys: string[][] = [[], []] // 二维数组：[[第一个交易的UTXO锁定脚本]]
-    const txraws: string[] = [] // 未签名交易
-    // 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
-    const utxos = await API.getUTXOs(address, tbcNumber + 0.1, network)
-    console.log('utxos:', utxos)
-    if (!utxos || utxos.length === 0) throw new Error("无可用UTXO支付手续费");
-    // 未签名交易
-    const freezeTx = piggyBank.freezeTBC(address, tbcNumber, lockTime, utxos)
-    const tx = new tbc.Transaction(freezeTx)
-    // 交易签名
-    const txRaw = tx.uncheckedSerialize()
-    txraws.push(txRaw) // 序列化未签名交易
-    for(let i=0; i < utxos.length; i++) {
-      utxos_satoshis[0]!.push(utxos[i]!.satoshis)
-      script_pubkeys[0]!.push(utxos[i]!.script)
-    }
-    // 验证参数格式
-    if (!Array.isArray(txraws) || txraws.length === 0) {
-      throw new Error("txraws 必须是非空数组");
-    }
-    if (!Array.isArray(utxos_satoshis) || utxos_satoshis.length === 0) {
-      throw new Error("utxos_satoshis 必须是非空数组");
-    }
-    if (!Array.isArray(script_pubkeys) || script_pubkeys.length === 0) {
-      throw new Error("script_pubkeys 必须是非空数组");
-    }
-    // 检查每个数组的第一个元素
-    if (!Array.isArray(utxos_satoshis[0]) || utxos_satoshis[0].length === 0) {
-      throw new Error("utxos_satoshis[0] 必须是非空数组");
-    }
-    if (!Array.isArray(script_pubkeys[0]) || script_pubkeys[0].length === 0) {
-      throw new Error("script_pubkeys[0] 必须是非空数组");
-    }
-    // console.log('参数验证通过，开始签名...')
-    // 对交易进行签名（兼容新旧钱包返回：优先 sigs，缺失则尝试 sig）
-    const signRes: any = await window.Turing.signTransaction({
-      txraws,
-      utxos_satoshis,
-      script_pubkeys
-    })
-    let sigInput: string[] = []
-    try {
-      if (signRes && signRes.sigs) {
-        const sigs = signRes.sigs
-        sigInput = Array.isArray(sigs[0]) ? sigs[0] : sigs
-      } else if (signRes && signRes.sig) {
-        const sig = signRes.sig
-        sigInput = Array.isArray(sig) ? sig : [sig]
-      }
-      if (!sigInput || sigInput.length === 0) {
-        throw new Error('签名数据为空')
-      }
-    } catch (e) {
-      throw new Error('交易签名失败：未获取到有效签名（兼容sigs/sig均失败）')
-    }
+	const tbcNumber = formData.depositAmount;
+	const tbcAmount = Math.ceil(formData.depositAmount * Math.pow(10, 6));
+	const lockTime = formData.lockTime;
+	try {
+		// 参数校验
+		const address = curAddress.value;
+		const blockHeight = curBlockHeight.value;
+		if (!address) throw new Error('钱包地址未获取');
+		if (!lockTime || lockTime <= blockHeight) throw new Error('锁定区块高度无效（需大于当前区块）');
+		if (!tbcAmount || tbcAmount <= 0) throw new Error('冻结金额无效');
+		// 参数准备-UTXO的金额和锁定脚本
+		const { tbcPubKey } = await window.Turing.getPubKey();
+		// 获取公钥
+		const publicKey = new tbc.PublicKey(tbcPubKey);
+		const utxos_satoshis: number[][] = [[], []]; // 二维数组：[[第一个交易的UTXO金额]]
+		const script_pubkeys: string[][] = [[], []]; // 二维数组：[[第一个交易的UTXO锁定脚本]]
+		const txraws: string[] = []; // 未签名交易
+		// 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
+		const utxos = await API.getUTXOs(address, tbcNumber + 0.1, network);
+		console.log('utxos:', utxos);
+		if (!utxos || utxos.length === 0) throw new Error('无可用UTXO支付手续费');
+		// 未签名交易
+		const freezeTx = piggyBank.freezeTBC(address, tbcNumber, lockTime, utxos);
+		const tx = new tbc.Transaction(freezeTx);
+		// 交易签名
+		const txRaw = tx.uncheckedSerialize();
+		txraws.push(txRaw); // 序列化未签名交易
+		for (let i = 0; i < utxos.length; i++) {
+			utxos_satoshis[0]!.push(utxos[i]!.satoshis);
+			script_pubkeys[0]!.push(utxos[i]!.script);
+		}
+		// 验证参数格式
+		if (!Array.isArray(txraws) || txraws.length === 0) {
+			throw new Error('txraws 必须是非空数组');
+		}
+		if (!Array.isArray(utxos_satoshis) || utxos_satoshis.length === 0) {
+			throw new Error('utxos_satoshis 必须是非空数组');
+		}
+		if (!Array.isArray(script_pubkeys) || script_pubkeys.length === 0) {
+			throw new Error('script_pubkeys 必须是非空数组');
+		}
+		// 检查每个数组的第一个元素
+		if (!Array.isArray(utxos_satoshis[0]) || utxos_satoshis[0].length === 0) {
+			throw new Error('utxos_satoshis[0] 必须是非空数组');
+		}
+		if (!Array.isArray(script_pubkeys[0]) || script_pubkeys[0].length === 0) {
+			throw new Error('script_pubkeys[0] 必须是非空数组');
+		}
+		// console.log('参数验证通过，开始签名...')
+		// 对交易进行签名（兼容新旧钱包返回：优先 sigs，缺失则尝试 sig）
+		const signRes: any = await window.Turing.signTransaction({
+			txraws,
+			utxos_satoshis,
+			script_pubkeys,
+		});
+		let sigInput: string[] = [];
+		try {
+			if (signRes && signRes.sigs) {
+				const sigs = signRes.sigs;
+				sigInput = Array.isArray(sigs[0]) ? sigs[0] : sigs;
+			} else if (signRes && signRes.sig) {
+				const sig = signRes.sig;
+				sigInput = Array.isArray(sig) ? sig : [sig];
+			}
+			if (!sigInput || sigInput.length === 0) {
+				throw new Error('签名数据为空');
+			}
+		} catch (e) {
+			throw new Error('交易签名失败：未获取到有效签名（兼容sigs/sig均失败）');
+		}
 
-    // 将签名添加到交易中，设置UTXO的解锁脚本
-    for (let i = 0; i < utxos.length; i++) {
-      const sig = sigInput[i]
-      if (!sig) throw new Error(`交易签名失败：缺少第${i}个输入的签名`)
-      tx.setInputScript({ inputIndex: i }, () => {
-        const sig_length = (sig.length / 2).toString(16)
-        const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16)
-        return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString())
-      })
-    }
-    // 广播交易
-    const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network)
-    if (!res) throw new Error("交易广播失败");
-    // 冻结成功提示
-    successMessage.value = t('deposit_success')
-    // 清空表单与错误
-    formData.depositAmount = 0
-    formData.lockTime = 0
-    errors.amountTipKey = ''
-    errors.timeTipKey = ''
-    submitErrorType.value = ''
-    setTimeout(() => (successMessage.value = ''), 3000)
-  } catch (error) {
-    const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
-    console.error('冻结交易异常:', errMsg);
-    submitErrorType.value = 'deposit_failed'
-    errorMessage.value = t('deposit_failed')
-    setTimeout(() => {
-      errorMessage.value = ''
-      submitErrorType.value = ''
-    }, 5000)
-  }
-}
+		// 将签名添加到交易中，设置UTXO的解锁脚本
+		for (let i = 0; i < utxos.length; i++) {
+			const sig = sigInput[i];
+			if (!sig) throw new Error(`交易签名失败：缺少第${i}个输入的签名`);
+			tx.setInputScript({ inputIndex: i }, () => {
+				const sig_length = (sig.length / 2).toString(16);
+				const publicKey_length = (publicKey.toBuffer().toString('hex').length / 2).toString(16);
+				return new tbc.Script(sig_length + sig + publicKey_length + publicKey.toString());
+			});
+		}
+		// 广播交易
+		const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network);
+		if (!res) throw new Error('交易广播失败');
+		// 冻结成功提示
+		successMessage.value = t('deposit_success');
+		// 清空表单与错误
+		formData.depositAmount = 0;
+		formData.lockTime = 0;
+		errors.amountTipKey = '';
+		errors.timeTipKey = '';
+		submitErrorType.value = '';
+		setTimeout(() => (successMessage.value = ''), 3000);
+	} catch (error) {
+		const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
+		console.error('冻结交易异常:', errMsg);
+		submitErrorType.value = 'deposit_failed';
+		errorMessage.value = t('deposit_failed');
+		setTimeout(() => {
+			errorMessage.value = '';
+			submitErrorType.value = '';
+		}, 5000);
+	}
+};
 
 // 提交冻结资产
 const handleDeposit = () => {
-  submitErrorType.value = ''
-  if (!validateAmount()) return
-  if (!validateLockTime()) return
-  freezeTBC()
-}
+	submitErrorType.value = '';
+	if (!validateAmount()) return;
+	if (!validateLockTime()) return;
+	freezeTBC();
+};
 
 // Onboarding integration
-const onboardingRef = ref<any>(null)
-const guideRef = ref<any>(null)
+const onboardingRef = ref<any>(null);
+const guideRef = ref<any>(null);
 const restartTour = () => {
-  guideRef.value?.close()
-  onboardingRef.value?.open(0)
-}
+	guideRef.value?.close();
+	onboardingRef.value?.open(0);
+};
 
 onMounted(() => {
-  try {
-    const done = localStorage.getItem('onboarding_v1_done')
-    if (!done) {
-      setTimeout(() => onboardingRef.value?.open(0), 200)
-    }
-  } catch {}
-})
-
+	try {
+		const done = localStorage.getItem('onboarding_v1_done');
+		if (!done) {
+			setTimeout(() => onboardingRef.value?.open(0), 200);
+		}
+	} catch {}
+});
 </script>
 
 <style scoped>
 /* Base reset 已移到全局 src/style.css */
 :deep(body) {
-  background-color: var(--color-bg-light); /* 使用全局变量 */
-  min-height: 100vh;
-  margin: 0;
-  padding: 20px;
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	background-color: var(--color-bg-light); /* 使用全局变量 */
+	min-height: 100vh;
+	margin: 0;
+	padding: 20px;
+	box-sizing: border-box;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* 全局容器样式 */
 .home-container {
-  max-width: 800px; /* 增加最大宽度 */
-  margin: 0 auto;
-  box-sizing: border-box;
+	max-width: 800px; /* 增加最大宽度 */
+	margin: 0 auto;
+	box-sizing: border-box;
 }
 
 /* 顶部导航 */
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding: 20px 0;
-  min-width: 0; /* 允许子项在英文时收缩 */
-  position: relative;
-  z-index: 3; /* 确保按钮覆盖在图片之上 */
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 30px;
+	padding: 20px 0;
+	min-width: 0; /* 允许子项在英文时收缩 */
+	position: relative;
+	z-index: 3; /* 确保按钮覆盖在图片之上 */
 }
 
 .title {
-  color: var(--color-text-primary); /* 使用全局变量 */
-  font-size: 24px;
-  font-weight: bold;
-  margin: 0;
-  margin-bottom: 20px;
-  word-break: break-word;
-  position: relative;
-  padding: 0 14px;
-  text-align: center;
-  display: block;
+	color: var(--color-text-primary); /* 使用全局变量 */
+	font-size: 24px;
+	font-weight: bold;
+	margin: 0;
+	margin-bottom: 20px;
+	word-break: break-word;
+	position: relative;
+	padding: 0 14px;
+	text-align: center;
+	display: block;
 }
 
 /* 顶部导航标题：修正与右侧按钮组的垂直对齐与换行问题 */
 .header .title {
-  margin-bottom: 0; /* 避免额外的下边距造成不对齐 */
-  line-height: 1; /* 垂直居中更准确 */
-  padding: 0; /* 标题左右不再额外占位 */
-  font-size: clamp(18px, 5.2vw, 24px); /* 移动端英文自适应缩放避免换行 */
+	margin-bottom: 0; /* 避免额外的下边距造成不对齐 */
+	line-height: 1; /* 垂直居中更准确 */
+	padding: 0; /* 标题左右不再额外占位 */
+	font-size: clamp(18px, 5.2vw, 24px); /* 移动端英文自适应缩放避免换行 */
 }
 
 .query-btn {
-  background: #d5e7fc;
-  color: #3d3c63;
-  padding: 10px 15px;
-  border-radius: 20px;
-  text-decoration: none;
-  font-size: 14px;
-  transition: all 0.3s ease;
+	background: #d5e7fc;
+	color: #3d3c63;
+	padding: 10px 15px;
+	border-radius: 20px;
+	text-decoration: none;
+	font-size: 14px;
+	transition: all 0.3s ease;
 }
 
 .query-btn:hover {
-  background: #a2d0fa;
-  transform: translateY(-2px);
+	background: #a2d0fa;
+	transform: translateY(-2px);
 }
 
 .lang-select {
-  height: 32px;
-  border-radius: var(--radius-sm);
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: var(--color-text-primary);
-  font-size: 14px;
-  padding: 0 8px;
+	height: 32px;
+	border-radius: var(--radius-sm);
+	border: 1px solid #e5e7eb;
+	background: #ffffff;
+	color: var(--color-text-primary);
+	font-size: 14px;
+	padding: 0 8px;
 }
 
 /* 语言切换按钮已移到全局 src/style.css */
 
 /* 存钱罐图片 */
 .piggy-bank-img {
-  max-width: 100%;
-  height: auto;
-  object-fit: contain;
-  /* 自适应上移与重叠（桌面与移动均平滑过渡） */
-  margin-bottom: -30%; /* 增加重叠比例 */
-  margin-right: 12%;
-  max-height: auto;
-  display: block;
-  margin-left: auto;
-  /* margin-right: auto; */
-  position: relative;
-  z-index: 0; /* 位于卡片与按钮之下，便于被覆盖 */
-  transform: translateY(-30%); /* 增加上移量 */
-  pointer-events: none; /* 避免遮挡点击 */
+	max-width: 100%;
+	height: auto;
+	object-fit: contain;
+	/* 自适应上移与重叠（桌面与移动均平滑过渡） */
+	margin-bottom: -30%; /* 增加重叠比例 */
+	margin-right: 12%;
+	max-height: auto;
+	display: block;
+	margin-left: auto;
+	/* margin-right: auto; */
+	position: relative;
+	z-index: 0; /* 位于卡片与按钮之下，便于被覆盖 */
+	transform: translateY(-30%); /* 增加上移量 */
+	pointer-events: none; /* 避免遮挡点击 */
 }
 
 /* 让钱包信息区位于图片之上，形成覆盖效果 */
 #tour-wallet {
-  position: relative;
-  z-index: 2;
+	position: relative;
+	z-index: 2;
 }
 
 /* 冻结表单区域（高透明度+阴影，不透主题） */
 .deposit-section {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-md);
-  text-align: center;
-  position: relative;
-  z-index: 2;
+	background: rgba(255, 255, 255, 0.95);
+	border-radius: var(--radius-md);
+	padding: var(--spacing-md);
+	margin-bottom: var(--spacing-md);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	box-shadow: var(--shadow-md);
+	text-align: center;
+	position: relative;
+	z-index: 2;
 }
 
 .deposit-section p {
-  color: var(--color-text-primary);
-  margin: 8px 0;
+	color: var(--color-text-primary);
+	margin: 8px 0;
 }
 
 /* 冻结表单区域标题样式 - 添加左右蓝色小圆点 */
 .deposit-section .title {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	padding: 0;
 }
 
 .deposit-section .title:before {
-  content: '';
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  margin-right: 18px;
-  flex-shrink: 0;
+	content: '';
+	display: block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--color-primary);
+	margin-right: 18px;
+	flex-shrink: 0;
 }
 
 .deposit-section .title:after {
-  content: '';
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  margin-left: 16px;
-  flex-shrink: 0;
+	content: '';
+	display: block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--color-primary);
+	margin-left: 16px;
+	flex-shrink: 0;
 }
 
 .deposit-section button:first-of-type {
-  background: #a2d0fa;
-  color: #3d3c63;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
+	background: #a2d0fa;
+	color: #3d3c63;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background 0.3s;
 }
 
 .deposit-section button:first-of-type:hover {
-  background: #7bc1f7;
+	background: #7bc1f7;
 }
 
 /* 表单基础样式已移到全局 src/style.css */
 
 /* 表单输入框样式在组件级别扩展 */
 .form-group input {
-  width: 100%;
-  padding: var(--spacing-sm);
-  border: 1px solid #eee;
-  border-radius: var(--radius-sm);
-  background: #ffffff;
-  font-size: 16px;
-  outline: none;
-  box-sizing: border-box;
-  color: #333 !important;
-  caret-color: #333 !important;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+	width: 100%;
+	padding: var(--spacing-sm);
+	border: 1px solid #eee;
+	border-radius: var(--radius-sm);
+	background: #ffffff;
+	font-size: 16px;
+	outline: none;
+	box-sizing: border-box;
+	color: #333 !important;
+	caret-color: #333 !important;
+	transition:
+		border-color 0.3s ease,
+		box-shadow 0.3s ease;
 }
 
 .form-group input:focus {
-  border-color: var(--blue-100);
-  box-shadow: 0 0 0 2px var(--blue-focus);
+	border-color: var(--blue-100);
+	box-shadow: 0 0 0 2px var(--blue-focus);
 }
 
 /* 时间输入组（输入框+下拉组件） */
 .time-input-group {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
-  flex-wrap: nowrap;
-  width: 100%;
+	display: flex;
+	gap: 8px;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	width: 100%;
 }
 
 .time-input-group input {
-  flex: 1;
-  padding: 14px 16px;
-  border: 1px solid #eee;
-  border-radius: var(--radius-sm);
-  font-size: 15px;
-  background: #ffffff;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  -webkit-appearance: none;
-  appearance: none;
+	flex: 1;
+	padding: 14px 16px;
+	border: 1px solid #eee;
+	border-radius: var(--radius-sm);
+	font-size: 15px;
+	background: #ffffff;
+	transition:
+		border-color 0.3s ease,
+		box-shadow 0.3s ease;
+	-webkit-appearance: none;
+	appearance: none;
 }
 
 .time-input-group input:focus {
-  border-color: var(--blue-100);
-  box-shadow: 0 0 0 2px var(--blue-focus);
+	border-color: var(--blue-100);
+	box-shadow: 0 0 0 2px var(--blue-focus);
 }
 
 /* 自定义下拉组件（带动画效果） */
 .custom-select {
-  position: relative;
-  width: auto;
-  min-width: 90px;
-  display: flex;
-  flex-direction: column;
+	position: relative;
+	width: auto;
+	min-width: 90px;
+	display: flex;
+	flex-direction: column;
 }
 
 /* 下拉选择器主容器 */
 .select-value {
-  padding: 14px 16px;
-  padding-right: 40px;
-  border: 1px solid #eee;
-  border-radius: var(--radius-sm);
-  font-size: 15px;
-  background: #ffffff;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.25s ease;
-  box-shadow: var(--shadow-sm);
+	padding: 14px 16px;
+	padding-right: 40px;
+	border: 1px solid #eee;
+	border-radius: var(--radius-sm);
+	font-size: 15px;
+	background: #ffffff;
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	transition: all 0.25s ease;
+	box-shadow: var(--shadow-sm);
 }
 
 .select-value span {
-  color: var(--color-text-primary);
-  white-space: nowrap;
+	color: var(--color-text-primary);
+	white-space: nowrap;
 }
 
 /* 下拉箭头（带旋转动画） */
 .select-icon {
-  color: #666; /* 固定箭头颜色 */
-  font-size: 12px;
-  transition: transform 0.25s ease;
+	color: #666; /* 固定箭头颜色 */
+	font-size: 12px;
+	transition: transform 0.25s ease;
 }
 
 .select-icon.rotate {
-  transform: rotate(180deg);
+	transform: rotate(180deg);
 }
 
 /* 下拉选项容器（带展开/收起动画） */
 .select-options {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  border: 1px solid #eee;
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  background: #ffffff; /* 纯色背景，避免主题透显 */
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  margin-top: -1px;
-  overflow: hidden;
+	position: absolute;
+	top: 100%;
+	left: 0;
+	width: 100%;
+	border: 1px solid #eee;
+	border-top: none;
+	border-radius: 0 0 8px 8px;
+	background: #ffffff; /* 纯色背景，避免主题透显 */
+	z-index: 100;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+	margin-top: -1px;
+	overflow: hidden;
 }
 
 /* 单个选项（带hover动画和入场延迟） */
 .option-item {
-  padding: var(--spacing-sm) 16px;
-  cursor: pointer;
-  color: var(--color-text-primary);
-  transition: all 0.2s ease;
-  transform: translateY(0);
-  opacity: 1;
-  animation: optionIn 0.2s ease-out forwards;
-  opacity: 0;
-  transform: translateY(5px);
+	padding: var(--spacing-sm) 16px;
+	cursor: pointer;
+	color: var(--color-text-primary);
+	transition: all 0.2s ease;
+	transform: translateY(0);
+	opacity: 1;
+	animation: optionIn 0.2s ease-out forwards;
+	opacity: 0;
+	transform: translateY(5px);
 }
 
 .option-item:hover {
-  background-color: #f0f5ff;
-  color: #165dff;
-  transform: translateX(4px);
+	background-color: #f0f5ff;
+	color: #165dff;
+	transform: translateX(4px);
 }
 
 /* 选项入场动画 */
 @keyframes optionIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 /* 每个选项的延迟动画（通过CSS变量控制） */
 .option-item {
-  animation-delay: var(--delay);
+	animation-delay: var(--delay);
 }
 
 /* 下拉框展开/收起动画 */
 .select-fade-enter-from {
-  max-height: 0;
-  opacity: 0;
+	max-height: 0;
+	opacity: 0;
 }
 
 .select-fade-enter-active {
-  transition: all 0.3s ease-out;
+	transition: all 0.3s ease-out;
 }
 
 .select-fade-enter-to {
-  max-height: 200px;
-  opacity: 1;
+	max-height: 200px;
+	opacity: 1;
 }
 
 .select-fade-leave-from {
-  max-height: 200px;
-  opacity: 1;
+	max-height: 200px;
+	opacity: 1;
 }
 
 .select-fade-leave-active {
-  transition: all 0.2s ease-in;
+	transition: all 0.2s ease-in;
 }
 
 .select-fade-leave-to {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
+	max-height: 0;
+	opacity: 0;
+	overflow: hidden;
 }
 
 /* 冻结按钮 */
 .deposit-btn {
-  width: 100%;
-  padding: var(--spacing-sm);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: #333;
-  margin-top: 10px;
+	width: 100%;
+	padding: var(--spacing-sm);
+	border: none;
+	border-radius: var(--radius-sm);
+	font-size: 16px;
+	font-weight: bold;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	color: #333;
+	margin-top: 10px;
 }
 
 .deposit-btn:focus,
 .deposit-btn:active {
-  outline: none !important;
+	outline: none !important;
 }
 
 .deposit-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 /* 错误提示样式和动画已移到全局 src/style.css */
 
 /* 错误状态下的下拉组件 */
 .error-input + .custom-select .select-value {
-  border-color: var(--color-error);
-  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1);
+	border-color: var(--color-error);
+	box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1);
 }
 
 .error-input + .custom-select .select-icon {
-  color: var(--color-error);
+	color: var(--color-error);
 }
 
 /* 下拉组件聚焦状态 */
 .custom-select:focus-within .select-value {
-  border-color: var(--blue-100);
-  box-shadow: 0 0 0 2px var(--blue-focus);
+	border-color: var(--blue-100);
+	box-shadow: 0 0 0 2px var(--blue-focus);
 }
 
 /* 移动端响应式适配 */
 @media (max-width: 768px) {
-  .home-container {
-    width: 95%;
-    max-width: 100%;
-  }
+	.home-container {
+		width: 95%;
+		max-width: 100%;
+	}
 }
 
 @media (max-width: 480px) {
-  :deep(body) {
-    padding: 15px;
-  }
+	:deep(body) {
+		padding: 15px;
+	}
 
-  .time-input-group {
-    gap: 6px;
-  }
+	.time-input-group {
+		gap: 6px;
+	}
 
-  .time-input-group input {
-    padding: 12px 14px;
-    font-size: 14px;
-  }
+	.time-input-group input {
+		padding: 12px 14px;
+		font-size: 14px;
+	}
 
-  .custom-select {
-    min-width: 80px;
-  }
+	.custom-select {
+		min-width: 80px;
+	}
 
-  .select-value {
-    padding: 12px 14px;
-    padding-right: 36px;
-    font-size: 14px;
-  }
+	.select-value {
+		padding: 12px 14px;
+		padding-right: 36px;
+		font-size: 14px;
+	}
 
-  .select-icon {
-    right: 14px;
-    font-size: 12px;
-  }
+	.select-icon {
+		right: 14px;
+		font-size: 12px;
+	}
 
-  .option-item {
-    padding: 10px 14px;
-    font-size: 14px;
-  }
+	.option-item {
+		padding: 10px 14px;
+		font-size: 14px;
+	}
 
-  .deposit-btn {
-    padding: 11px;
-    font-size: clamp(14px, 4vw, 15px);
-  }
+	.deposit-btn {
+		padding: 11px;
+		font-size: clamp(14px, 4vw, 15px);
+	}
 
-  .piggy-bank-img {
-    /* 移动端：更大的重叠比例 */
-    transform: translateY(-100px);
-    margin-bottom: -144px;
-    max-height: 12rem;
-  }
+	.piggy-bank-img {
+		/* 移动端：更大的重叠比例 */
+		transform: translateY(-100px);
+		margin-bottom: -144px;
+		max-height: 12rem;
+	}
 
-  .query-btn,
-  .lang-btn .lang-text {
-    font-size: clamp(12px, 3.6vw, 14px);
-  }
+	.query-btn,
+	.lang-btn .lang-text {
+		font-size: clamp(12px, 3.6vw, 14px);
+	}
 
-  .lang-btn {
-    padding: 6px 10px;
-  }
+	.lang-btn {
+		padding: 6px 10px;
+	}
 }
 
 /* 自动填充样式已移到全局 src/style.css */
