@@ -142,6 +142,10 @@ const submitError = computed(() => {
 const successMessage = ref('');
 const errorMessage = ref('');
 
+// 定时器引用，用于清除之前的定时器
+let successMessageTimer: NodeJS.Timeout | null = null;
+let errorMessageTimer: NodeJS.Timeout | null = null;
+
 // 语言
 const locale = localeRef;
 
@@ -294,7 +298,17 @@ const freezeTBC = async () => {
 		// 广播交易
 		const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network);
 		if (!res) throw new Error('交易广播失败');
-		// 冻结成功提示
+		// 冻结成功提示（3秒后自动隐藏）
+		// 清除之前的定时器
+		if (successMessageTimer) {
+			clearTimeout(successMessageTimer);
+		}
+		// 清除错误消息
+		errorMessage.value = '';
+		if (errorMessageTimer) {
+			clearTimeout(errorMessageTimer);
+			errorMessageTimer = null;
+		}
 		successMessage.value = t('deposit_success');
 		// 清空表单与错误
 		formData.depositAmount = 0;
@@ -302,15 +316,32 @@ const freezeTBC = async () => {
 		errors.amountTipKey = '';
 		errors.timeTipKey = '';
 		submitErrorType.value = '';
-		setTimeout(() => (successMessage.value = ''), 3000);
+		// 3秒后自动隐藏
+		successMessageTimer = setTimeout(() => {
+			successMessage.value = '';
+			successMessageTimer = null;
+		}, 3000);
 	} catch (error) {
 		const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
 		console.error('冻结交易异常:', errMsg);
 		submitErrorType.value = 'deposit_failed';
+		// 错误提示（5秒后自动隐藏）
+		// 清除之前的定时器
+		if (errorMessageTimer) {
+			clearTimeout(errorMessageTimer);
+		}
+		// 清除成功消息
+		successMessage.value = '';
+		if (successMessageTimer) {
+			clearTimeout(successMessageTimer);
+			successMessageTimer = null;
+		}
 		errorMessage.value = t('deposit_failed');
-		setTimeout(() => {
+		// 5秒后自动隐藏
+		errorMessageTimer = setTimeout(() => {
 			errorMessage.value = '';
 			submitErrorType.value = '';
+			errorMessageTimer = null;
 		}, 5000);
 	}
 };

@@ -38,15 +38,23 @@ const { walletInfo, isLoadingBalance, isLoadingHeight, getAddress, getBalance, g
 // 成功提示消息
 const successMessage = ref('');
 
+// 定时器引用，用于清除之前的定时器
+let successMessageTimer: NodeJS.Timeout | null = null;
+
 // 处理获取地址
 const handleGetAddress = async () => {
 	const result = await getAddress();
 	if (result) {
-		// 获取地址成功，显示提示
+		// 获取地址成功，显示提示（3秒后自动隐藏）
+		// 清除之前的定时器（如果存在）
+		if (successMessageTimer) {
+			clearTimeout(successMessageTimer);
+		}
 		successMessage.value = t('address_get_success');
 		// 3秒后自动隐藏
-		setTimeout(() => {
+		successMessageTimer = setTimeout(() => {
 			successMessage.value = '';
+			successMessageTimer = null;
 		}, 3000);
 	}
 };

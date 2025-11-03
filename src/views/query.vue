@@ -230,19 +230,51 @@ const blockHeightToDate = (blockHeight: number): string => {
 	}
 };
 
-// 显示成功提示
+// 定时器引用，用于清除之前的定时器
+let successMessageTimer: NodeJS.Timeout | null = null;
+let errorMessageTimer: NodeJS.Timeout | null = null;
+
+// 显示成功提示（统一3秒后自动隐藏）
 const showSuccessMessage = (messageKey: string) => {
+	// 清除之前的定时器（如果存在）
+	if (successMessageTimer) {
+		clearTimeout(successMessageTimer);
+		successMessageTimer = null;
+	}
+	// 清除错误消息（避免同时显示）
+	errorMessageType.value = '';
+	if (errorMessageTimer) {
+		clearTimeout(errorMessageTimer);
+		errorMessageTimer = null;
+	}
+	// 设置成功消息
 	successMessageType.value = messageKey;
-	setTimeout(() => {
+	// 3秒后自动隐藏
+	successMessageTimer = setTimeout(() => {
 		successMessageType.value = '';
+		successMessageTimer = null;
 	}, 3000);
 };
 
-// 显示错误提示
+// 显示错误提示（统一5秒后自动隐藏）
 const showErrorMessage = (messageKey: string) => {
+	// 清除之前的定时器（如果存在）
+	if (errorMessageTimer) {
+		clearTimeout(errorMessageTimer);
+		errorMessageTimer = null;
+	}
+	// 清除成功消息（避免同时显示）
+	successMessageType.value = '';
+	if (successMessageTimer) {
+		clearTimeout(successMessageTimer);
+		successMessageTimer = null;
+	}
+	// 设置错误消息
 	errorMessageType.value = messageKey;
-	setTimeout(() => {
+	// 5秒后自动隐藏
+	errorMessageTimer = setTimeout(() => {
 		errorMessageType.value = '';
+		errorMessageTimer = null;
 	}, 5000);
 };
 
@@ -264,7 +296,7 @@ const loadAssets = async () => {
 		// console.log('已冻结资产总额:', frozenTotal)
 		// 获取已冻结的UTXO列表
 		const frozenList = await API.fetchFrozenUTXOList(address, network);
-		console.log('原始已冻结资产:', frozenList);
+		// console.log('原始已冻结资产:', frozenList);
 		// 解码锁定时间并构建新的资产数据结构
 		const processedFrozenAssets: any[] = [];
 		if (frozenList && frozenList.length > 0) {
@@ -322,7 +354,8 @@ const loadAssets = async () => {
 		// console.log('可解冻资产:', unfrozenAssets.value)
 	} catch (error) {
 		// console.error('加载资产失败:', error)
-		errorMessageType.value = 'err_load_assets';
+		alert(error);
+		showErrorMessage('err_load_assets');
 	} finally {
 		isLoading.value = false;
 	}
@@ -359,7 +392,9 @@ const unfreezeAsset = async (asset: any) => {
 	if (isUnfreezing.value) return;
 	try {
 		isUnfreezing.value = true;
+		// 清除之前的错误消息
 		errorMessageType.value = '';
+		successMessageType.value = '';
 		const address = curAddress.value;
 		if (!address) {
 			throw new Error('钱包地址未获取');
