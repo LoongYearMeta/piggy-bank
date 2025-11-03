@@ -181,7 +181,7 @@ button:hover {
 /* Toasts (top-right) */
 .toast-success {
 	position: fixed;
-	top: 20px;
+	top: 100px; /* 调整位置，避免被 header 按钮遮挡 */
 	right: 20px;
 	background: #51cf66;
 	color: #fff;
@@ -190,14 +190,14 @@ button:hover {
 	font-size: 14px;
 	font-weight: 600;
 	box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
-	z-index: 1000;
-	max-width: 80vw; /* 移动端限制宽度 */
+	z-index: 10000; /* 提高 z-index 确保在最上层 */
+	max-width: calc(100vw - 40px); /* 移动端限制宽度，留出左右边距 */
 	white-space: normal;
 	word-break: break-word;
 }
 .toast-error {
 	position: fixed;
-	top: 20px;
+	top: 80px; /* 调整位置，避免被 header 按钮遮挡 */
 	right: 20px;
 	background: #ff4d4f;
 	color: #fff;
@@ -206,10 +206,22 @@ button:hover {
 	font-size: 14px;
 	font-weight: 600;
 	box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
-	z-index: 1000;
-	max-width: 80vw; /* 移动端限制宽度 */
+	z-index: 10000; /* 提高 z-index 确保在最上层 */
+	max-width: calc(100vw - 40px); /* 移动端限制宽度，留出左右边距 */
 	white-space: normal;
 	word-break: break-word;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+	.toast-success,
+	.toast-error {
+		top: 70px; /* 移动端稍微上移 */
+		right: 10px; /* 移动端减少右边距 */
+		left: 10px; /* 移动端添加左边距 */
+		max-width: none; /* 移除最大宽度限制 */
+		width: auto; /* 自适应宽度 */
+	}
 }
 .toast-success-fade-enter-from,
 .toast-error-fade-enter-from {

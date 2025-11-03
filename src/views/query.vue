@@ -149,12 +149,13 @@ const walletInfoRef = ref<InstanceType<typeof WalletInfo>>();
 // 使用 Pinia store
 const walletStore = useWalletStore();
 const { walletInfo, getWalletInfo } = walletStore;
-// 获取网络类型（computed 属性）
-const network = computed(() => walletStore.network);
 
 // 为了保持向后兼容，创建别名
 const curAddress = computed(() => walletInfo.curAddress || '');
 const curBlockHeight = computed(() => walletInfo.curBlockHeight || 0);
+
+// 响应式数据
+const network = import.meta.env.VITE_NETWORK || undefined; // 网络环境
 const frozenAssets = ref<any[]>([]); // 已冻结资产
 const unfrozenAssets = ref<any[]>([]); // 可解冻资产
 const frozenTotal = ref(0); // 已冻结总额
@@ -259,10 +260,10 @@ const loadAssets = async () => {
 		isLoading.value = true;
 		errorMessageType.value = '';
 		// 获取已冻结的TBC余额
-		frozenTotal.value = await API.fetchFrozenTBCBalance(address, network.value);
+		frozenTotal.value = await API.fetchFrozenTBCBalance(address, network);
 		// console.log('已冻结资产总额:', frozenTotal)
 		// 获取已冻结的UTXO列表
-		const frozenList = await API.fetchFrozenUTXOList(address, network.value);
+		const frozenList = await API.fetchFrozenUTXOList(address, network);
 		console.log('原始已冻结资产:', frozenList);
 		// 解码锁定时间并构建新的资产数据结构
 		const processedFrozenAssets: any[] = [];
@@ -382,7 +383,7 @@ const unfreezeAsset = async (asset: any) => {
 		}));
 
 		// 构造解冻交易-未签名交易
-		const unfreezeTx = await piggyBank.unfreezeTBC(address, sanitizedUtxos, network.value);
+		const unfreezeTx = await piggyBank.unfreezeTBC(address, sanitizedUtxos, network);
 		const tx = new tbc.Transaction(unfreezeTx);
 		// console.log('解冻交易:', tx)
 		for (let i = 0; i < sanitizedUtxos.length; i++) {
@@ -443,7 +444,7 @@ const unfreezeAsset = async (asset: any) => {
 			});
 		}
 		// 广播交易
-		const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network.value);
+		const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network);
 		if (!res) throw new Error('交易广播失败');
 		// 重新加载资产数据并刷新钱包信息
 		await loadAssets();

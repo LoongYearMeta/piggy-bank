@@ -1,7 +1,7 @@
 <template>
 	<div class="wallet-section">
 		<!-- 获取钱包地址、余额、区块高度 -->
-		<button @click="getAddress">{{ t('click_get_address') }}</button>
+		<button @click="handleGetAddress">{{ t('click_get_address') }}</button>
 		<!-- 钱包信息 -->
 		<template v-if="walletInfo.curAddress">
 			<div class="form-group">
@@ -20,15 +20,36 @@
 			</div>
 		</template>
 	</div>
+	<!-- 成功提示 -->
+	<Transition name="toast-success-fade">
+		<div class="toast-success" v-if="successMessage">{{ successMessage }}</div>
+	</Transition>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { t } from '../i18n';
 import { useWalletStore } from '../stores/wallet';
 
 // 使用 Pinia store
 const walletStore = useWalletStore();
 const { walletInfo, isLoadingBalance, isLoadingHeight, getAddress, getBalance, getBlockHeight, getWalletInfo } = walletStore;
+
+// 成功提示消息
+const successMessage = ref('');
+
+// 处理获取地址
+const handleGetAddress = async () => {
+	const result = await getAddress();
+	if (result) {
+		// 获取地址成功，显示提示
+		successMessage.value = t('address_get_success');
+		// 3秒后自动隐藏
+		setTimeout(() => {
+			successMessage.value = '';
+		}, 3000);
+	}
+};
 
 // 暴露方法供父组件调用
 defineExpose({
