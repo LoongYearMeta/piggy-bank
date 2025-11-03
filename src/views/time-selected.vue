@@ -404,6 +404,7 @@ const lockBlockHeight = computed<number>(() => {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 	gap: 10px;
+	margin-top: 10px;
 }
 
 .preview-item {
