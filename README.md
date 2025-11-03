@@ -7,13 +7,17 @@ A Vue 3 + TypeScript application for managing piggy bank deposits.
 项目使用环境变量来配置 API 的 network 参数：
 
 ### 开发环境
+
 `.env.development` 文件中配置：
+
 ```
 VITE_NETWORK=testnet
 ```
 
 ### 生产环境
+
 `.env.production` 文件中配置：
+
 ```
 VITE_NETWORK=
 ```
