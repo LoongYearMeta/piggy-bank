@@ -145,7 +145,6 @@ export const useWalletStore = defineStore('wallet', () => {
 					}
 				}
 			}
-			
 			// 如果无法检测，使用环境变量作为后备
 			network.value = defaultNetwork;
 			isDetectingNetwork.value = false;
