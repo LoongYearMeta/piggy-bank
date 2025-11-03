@@ -4,13 +4,13 @@
 		<header class="header">
 			<h2 class="title">{{ t('app_title') }}</h2>
 			<div style="display: flex; gap: 10px; align-items: center">
+				<router-link to="/query" class="lang-btn">
+					{{ t('nav_details') }}
+				</router-link>
 				<button type="button" class="lang-btn" @click="toggleLocale">
 					<span class="lang-text">{{ locale === 'zh' ? '中文' : 'English' }}</span>
 					<span class="lang-dot" />
 				</button>
-				<router-link to="/query" class="lang-btn">
-					{{ t('nav_details') }}
-				</router-link>
 			</div>
 		</header>
 		<!-- logo图片 -->

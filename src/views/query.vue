@@ -354,7 +354,7 @@ const loadAssets = async () => {
 		// console.log('可解冻资产:', unfrozenAssets.value)
 	} catch (error) {
 		// console.error('加载资产失败:', error)
-		alert(error);
+		// alert(error);
 		showErrorMessage('err_load_assets');
 	} finally {
 		isLoading.value = false;
