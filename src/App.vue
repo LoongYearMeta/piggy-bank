@@ -12,9 +12,10 @@ onMounted(() => {
 		if (window.Turing) {
 			walletStore.checkAccountChange();
 			
+			// 增加检查间隔到 10 秒
 			checkInterval = setInterval(() => {
 				walletStore.checkAccountChange();
-			}, 3000);
+			}, 10000);
 		} else {
 			let retryCount = 0;
 			const retryInterval = setInterval(() => {
@@ -25,7 +26,7 @@ onMounted(() => {
 					
 					checkInterval = setInterval(() => {
 						walletStore.checkAccountChange();
-					}, 3000);
+					}, 10000);
 				} else if (retryCount >= 10) {
 					clearInterval(retryInterval);
 				}

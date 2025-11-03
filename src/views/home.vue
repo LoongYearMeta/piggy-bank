@@ -105,8 +105,6 @@ interface Errors {
 	timeTipKey: string; // 存储错误键而不是错误文本
 }
 
-// 响应式数据
-const network = import.meta.env.VITE_NETWORK || undefined; // 网络环境
 // 表单数据-冻结
 const formData = reactive({
 	depositAmount: 0, // 冻结金额
@@ -116,6 +114,8 @@ const formData = reactive({
 // 使用 Pinia store 管理钱包信息
 const walletStore = useWalletStore();
 const { walletInfo } = walletStore;
+// 获取网络类型（computed 属性）
+const network = computed(() => walletStore.network);
 
 // 为了保持向后兼容，创建别名
 const curAddress = computed(() => walletInfo.curAddress || '');
@@ -228,7 +228,7 @@ const freezeTBC = async () => {
 		const script_pubkeys: string[][] = [[], []]; // 二维数组：[[第一个交易的UTXO锁定脚本]]
 		const txraws: string[] = []; // 未签名交易
 		// 使用 getUTXOs 获取 UTXO 列表（传入地址和金额）
-		const utxos = await API.getUTXOs(address, tbcNumber + 0.1, network);
+		const utxos = await API.getUTXOs(address, tbcNumber + 0.1, network.value);
 		console.log('utxos:', utxos);
 		if (!utxos || utxos.length === 0) throw new Error('无可用UTXO支付手续费');
 		// 未签名交易
@@ -292,7 +292,7 @@ const freezeTBC = async () => {
 			});
 		}
 		// 广播交易
-		const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network);
+		const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network.value);
 		if (!res) throw new Error('交易广播失败');
 		// 冻结成功提示
 		successMessage.value = t('deposit_success');
