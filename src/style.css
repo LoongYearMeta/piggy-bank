@@ -181,7 +181,7 @@ button:hover {
 /* Toasts (top-right) */
 .toast-success {
 	position: fixed;
-	top: 100px; /* 调整位置，避免被 header 按钮遮挡 */
+	top: 10vh; /* 调整位置，避免被 header 按钮遮挡 */
 	right: 20px;
 	background: #51cf66;
 	color: #fff;
