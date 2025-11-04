@@ -57,6 +57,7 @@ import { API } from 'tbc-contract';
 const props = defineProps<{
 	address?: string;
 	network?: string | undefined;
+	lockTime?: number; // 接收父组件传入的 lockTime，用于同步重置
 }>();
 
 // emit: 向父组件回传 lockTime（区块高度）与展示日期
@@ -105,6 +106,17 @@ watch(selectedKey, () => {
 	emit('update:lockTime', lockBlockHeight.value);
 	emit('update:dateText', dueDateStr.value);
 });
+
+// 监听父组件传入的 lockTime，当它为 0 时重置选择状态
+watch(
+	() => props.lockTime,
+	(newLockTime) => {
+		// 只有当 lockTime 为 0 且 selectedKey 不为空时才重置，避免不必要的更新
+		if ((newLockTime === 0 || newLockTime === undefined || newLockTime === null) && selectedKey.value) {
+			selectedKey.value = '';
+		}
+	},
+);
 
 // 保留占位（若未来需要外部复用），当前未使用
 
@@ -230,6 +242,8 @@ const dueDateStr = computed(() => {
 
 // 根据日期 0 点换算区块高度：以当前区块高度与当前时间为基准，10 分钟一个块
 const lockBlockHeight = computed<number>(() => {
+	// 如果未选择期限，返回 0
+	if (!selectedKey.value) return 0;
 	if (!currentBlockHeight.value) return 0;
 	const now = new Date();
 	const msPerBlock = 10 * 60 * 1000;

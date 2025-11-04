@@ -42,6 +42,7 @@
 					<TimeSelected
 						:address="curAddress"
 						:network="network"
+						:lockTime="formData.lockTime"
 						@update:lockTime="handleLockTimeChange"
 					/>
 					<Transition name="error-fade">
