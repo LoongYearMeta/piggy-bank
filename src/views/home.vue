@@ -115,7 +115,7 @@ const formData = reactive({
 
 // 使用 Pinia store 管理钱包信息
 const walletStore = useWalletStore();
-const { walletInfo } = walletStore;
+const { walletInfo, getBalance } = walletStore;
 
 // 为了保持向后兼容，创建别名
 const curAddress = computed(() => walletInfo.curAddress || '');
@@ -127,6 +127,9 @@ const errors = reactive<Errors>({
 	amountTipKey: '',
 	timeTipKey: '',
 });
+
+// 标志：是否正在清空表单（成功操作后），用于跳过校验
+const isClearingForm = ref(false);
 
 // 使用计算属性动态获取错误文本
 const amountTip = computed(() => (errors.amountTipKey ? t(errors.amountTipKey) : ''));
@@ -158,6 +161,8 @@ function toggleLocale() {
 watch(
 	() => formData.depositAmount, // 监听formData中的depositAmount属性
 	() => {
+		// 如果正在清空表单，跳过校验
+		if (isClearingForm.value) return;
 		validateAmount();
 	},
 );
@@ -166,6 +171,8 @@ watch(
 watch(
 	() => formData.lockTime, // 监听formData中的lockTime属性
 	() => {
+		// 如果正在清空表单，跳过校验
+		if (isClearingForm.value) return;
 		validateLockTime();
 	},
 );
@@ -298,6 +305,8 @@ const freezeTBC = async () => {
 		// 广播交易
 		const res = await API.broadcastTXraw(tx.uncheckedSerialize(), network);
 		if (!res) throw new Error('交易广播失败');
+		// 刷新钱包余额
+		await getBalance();
 		// 冻结成功提示（3秒后自动隐藏）
 		// 清除之前的定时器
 		if (successMessageTimer) {
@@ -310,12 +319,17 @@ const freezeTBC = async () => {
 			errorMessageTimer = null;
 		}
 		successMessage.value = t('deposit_success');
-		// 清空表单与错误
-		formData.depositAmount = 0;
-		formData.lockTime = 0;
+		// 清空表单与错误（先清除错误，再清空表单，避免触发校验）
 		errors.amountTipKey = '';
 		errors.timeTipKey = '';
 		submitErrorType.value = '';
+		// 设置标志，跳过清空表单时的校验
+		isClearingForm.value = true;
+		formData.depositAmount = 0;
+		formData.lockTime = 0;
+		// 使用 nextTick 确保清空完成后再重置标志
+		await new Promise(resolve => setTimeout(resolve, 0));
+		isClearingForm.value = false;
 		// 3秒后自动隐藏
 		successMessageTimer = setTimeout(() => {
 			successMessage.value = '';

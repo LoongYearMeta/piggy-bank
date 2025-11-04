@@ -148,7 +148,7 @@ const walletInfoRef = ref<InstanceType<typeof WalletInfo>>();
 
 // 使用 Pinia store
 const walletStore = useWalletStore();
-const { walletInfo, getWalletInfo } = walletStore;
+const { walletInfo, getWalletInfo, getBalance } = walletStore;
 
 // 为了保持向后兼容，创建别名
 const curAddress = computed(() => walletInfo.curAddress || '');
@@ -483,6 +483,8 @@ const unfreezeAsset = async (asset: any) => {
 		if (!res) throw new Error('交易广播失败');
 		// 重新加载资产数据并刷新钱包信息
 		await loadAssets();
+		// 刷新钱包余额
+		await getBalance();
 		await getWalletInfo();
 		// 显示成功提示
 		showSuccessMessage('withdraw_success');
