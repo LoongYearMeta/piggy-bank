@@ -117,7 +117,7 @@ const messages: Record<Locale, Record<string, string>> = {
 		warning_wallet_not_installed: 'Please install Turing Wallet first',
 		warning_no_account: 'No account found in wallet, please create an account first',
 		warning_connect_failed: 'Connection failed, please ensure you have created a wallet account',
-		app_title: 'Honey Bank',
+		app_title: 'Honey Vault',
 		nav_details: 'Deposit Details',
 		back: 'Back',
 		click_get_address: 'Click to get address',
