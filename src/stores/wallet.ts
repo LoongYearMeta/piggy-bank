@@ -141,7 +141,14 @@ export const useWalletStore = defineStore('wallet', () => {
 			
 			// 如果钱包已连接且有地址，并且距离上次检查时间太短，则跳过本次检查
 			// 这样可以减少不必要的 API 调用和日志输出
-			if (isConnected.value && currentAddress && (now - lastCheckTime) < CHECK_INTERVAL) {
+			// 但是首次加载时（lastCheckTime === 0）或者有缓存地址但未连接时，需要强制检查
+			const isFirstCheck = lastCheckTime === 0;
+			const shouldSkipCheck = isConnected.value && currentAddress && !isFirstCheck && (now - lastCheckTime) < CHECK_INTERVAL;
+			
+			// 如果有缓存地址但未连接，需要强制检查以恢复连接
+			const shouldForceCheck = cachedAddress && !isConnected.value;
+			
+			if (shouldSkipCheck && !shouldForceCheck) {
 				return true;
 			}
 			

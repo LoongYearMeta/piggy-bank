@@ -116,7 +116,7 @@ const formData = reactive({
 
 // 使用 Pinia store 管理钱包信息
 const walletStore = useWalletStore();
-const { walletInfo, getBalance } = walletStore;
+const { walletInfo, getBalance, getWalletInfo } = walletStore;
 
 // 为了保持向后兼容，创建别名
 const curAddress = computed(() => walletInfo.curAddress || '');
@@ -377,13 +377,24 @@ const restartTour = () => {
 	onboardingRef.value?.open(0);
 };
 
-onMounted(() => {
+onMounted(async () => {
 	try {
 		const done = localStorage.getItem('onboarding_v1_done');
 		if (!done) {
 			setTimeout(() => onboardingRef.value?.open(0), 200);
 		}
 	} catch {}
+	
+	// 首次加载时主动检查钱包状态（移动端可能 window.Turing 初始化较慢，需要重试）
+	const walletStore = useWalletStore();
+	const checkWalletWithRetry = async (retryCount = 0, maxRetries = 10) => {
+		if (window.Turing) {
+			await walletStore.getWalletInfo();
+		} else if (retryCount < maxRetries) {
+			setTimeout(() => checkWalletWithRetry(retryCount + 1, maxRetries), 200);
+		}
+	};
+	checkWalletWithRetry();
 });
 </script>
 
