@@ -7,6 +7,7 @@ type WaitForTuringOptions = {
 
 let pendingPromise: Promise<TuringAPI> | null = null;
 
+// 等待 Turing 钱包实例
 export async function waitForTuring(options: WaitForTuringOptions = {}) {
 	if (typeof window === 'undefined') {
 		throw new Error('window is undefined');

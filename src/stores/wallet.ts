@@ -5,6 +5,7 @@ import { t } from '../i18n';
 import { getLocalStorage, setLocalStorage, removeLocalStorage } from '../utils/storage';
 import { waitForTuring } from '../utils/waitForTuring';
 
+// 钱包 store
 export const useWalletStore = defineStore('wallet', () => {
 	const ADDRESS_CACHE_KEY = 'tbcAddress';
 	const BALANCE_CACHE_KEY = 'tbcBalance';
@@ -31,11 +32,13 @@ export const useWalletStore = defineStore('wallet', () => {
 		return typeof window !== 'undefined';
 	});
 
+	// 缓存地址
 	const cachedAddress = getLocalStorage(ADDRESS_CACHE_KEY);
 	if (cachedAddress) {
 		walletInfo.curAddress = cachedAddress;
 	}
 
+	// 缓存余额
 	const cachedBalance = getLocalStorage(BALANCE_CACHE_KEY);
 	if (cachedBalance !== null) {
 		const parsed = Number(cachedBalance);
@@ -44,6 +47,7 @@ export const useWalletStore = defineStore('wallet', () => {
 		}
 	}
 
+	// 缓存区块高度
 	const cachedHeight = getLocalStorage(HEIGHT_CACHE_KEY);
 	if (cachedHeight !== null) {
 		const parsed = Number(cachedHeight);
@@ -52,6 +56,7 @@ export const useWalletStore = defineStore('wallet', () => {
 		}
 	}
 
+	// 确保数据已获取
 	const ensureDataFetched = () => {
 		if (!walletInfo.curAddress) {
 			return;
@@ -137,12 +142,29 @@ export const useWalletStore = defineStore('wallet', () => {
 		}
 		
 		try {
-			const tbc = await API.getTBCbalance(walletInfo.curAddress, network);
+			// 添加超时处理，避免代理连接失败导致长时间等待
+			const timeoutPromise = new Promise<never>((_, reject) => {
+				setTimeout(() => reject(new Error('Request timeout')), 10000); // 10秒超时
+			});
+			
+			const apiPromise = API.getTBCbalance(walletInfo.curAddress, network);
+			const tbc = await Promise.race([apiPromise, timeoutPromise]);
 			walletInfo.tbcBalance = tbc / 1000000;
 			setLocalStorage(BALANCE_CACHE_KEY, walletInfo.tbcBalance.toString(), 1000 * 60 * 5);
 		} catch (error) {
 			console.error('获取钱包余额失败:', error);
-			walletInfo.tbcBalance = 0;
+			// 如果已有缓存的余额，保持使用缓存，不要重置为0
+			const cachedBalance = getLocalStorage(BALANCE_CACHE_KEY);
+			if (cachedBalance !== null) {
+				const parsed = Number(cachedBalance);
+				if (!Number.isNaN(parsed) && parsed >= 0) {
+					walletInfo.tbcBalance = parsed;
+				} else {
+					walletInfo.tbcBalance = null;
+				}
+			} else {
+				walletInfo.tbcBalance = null;
+			}
 		} finally {
 			isLoadingBalance.value = false;
 		}
@@ -152,12 +174,29 @@ export const useWalletStore = defineStore('wallet', () => {
 	const getBlockHeight = async () => {
 		// 区块高度不依赖地址，可以直接获取
 		try {
-			const res = await API.fetchBlockHeaders(network);
+			// 添加超时处理，避免代理连接失败导致长时间等待
+			const timeoutPromise = new Promise<never>((_, reject) => {
+				setTimeout(() => reject(new Error('Request timeout')), 10000); // 10秒超时
+			});
+			
+			const apiPromise = API.fetchBlockHeaders(network);
+			const res = await Promise.race([apiPromise, timeoutPromise]);
 			walletInfo.curBlockHeight = res[0]?.height || 0;
 			setLocalStorage(HEIGHT_CACHE_KEY, walletInfo.curBlockHeight.toString(), 1000 * 60 * 5);
 		} catch (error) {
 			console.error('获取当前区块高度失败:', error);
-			walletInfo.curBlockHeight = 0;
+			// 如果已有缓存的高度，保持使用缓存，不要重置为0
+			const cachedHeight = getLocalStorage(HEIGHT_CACHE_KEY);
+			if (cachedHeight !== null) {
+				const parsed = Number(cachedHeight);
+				if (!Number.isNaN(parsed) && parsed > 0) {
+					walletInfo.curBlockHeight = parsed;
+				} else {
+					walletInfo.curBlockHeight = null;
+				}
+			} else {
+				walletInfo.curBlockHeight = null;
+			}
 		} finally {
 			isLoadingHeight.value = false;
 		}

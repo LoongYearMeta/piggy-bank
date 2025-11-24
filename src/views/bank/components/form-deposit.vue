@@ -153,7 +153,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { CSSProperties } from 'vue';
-import { t } from '../../../i18n';
+import { t, locale } from '../../../i18n';
 import { Regex } from '../../../utils/reg';
 import { useWalletStore } from '../../../stores/wallet';
 import { API } from 'tbc-contract';
@@ -261,7 +261,89 @@ watch(
 	},
 );
 
-const selectedLockLabel = computed(() => labelForLock(selectedLockKey.value));
+// 监听语言切换，更新错误信息和标签
+watch(
+	() => locale.value,
+	() => {
+		// 如果存在金额错误，重新验证以更新错误信息
+		if (amountErrorText.value) {
+			validateAmount();
+		}
+		// 如果存在锁定期限错误，重新验证以更新错误信息
+		if (lockTimeErrorText.value) {
+			validateLockTime();
+		}
+		// 更新提交状态消息的翻译
+		if (successMessage.value) {
+			successMessage.value = t('deposit_success');
+		}
+		// 对于提交错误信息，尝试匹配并更新已知的错误键
+		if (submitErrorText.value) {
+			const errorKey = getErrorKeyFromMessage(submitErrorText.value);
+			if (errorKey) {
+				// 处理包含占位符的错误消息（如 err_sign_missing）
+				if (errorKey === 'err_sign_missing') {
+					const match = submitErrorText.value.match(/(\d+)/);
+					if (match) {
+						submitErrorText.value = t('err_sign_missing').replace('{index}', match[1]!);
+					} else {
+						submitErrorText.value = t(errorKey);
+					}
+				} else {
+					submitErrorText.value = t(errorKey);
+				}
+			}
+		}
+	},
+);
+
+// 辅助函数：从错误消息中提取可能的错误键
+function getErrorKeyFromMessage(message: string): string | null {
+	// 检查是否匹配已知的翻译消息（支持中英文）
+	const zhMessages: Record<string, string> = {
+		'存入成功！': 'deposit_success',
+		'存入失败！请检查网络连接或重试。': 'deposit_failed',
+		'冻结金额无效': 'err_invalid_amount',
+		'无可用UTXO支付手续费': 'err_no_utxo',
+		'交易签名失败：未获取到有效签名': 'err_sign_failed',
+		'交易广播失败': 'err_broadcast_failed',
+		'钱包地址未获取': 'err_address_not_found',
+	};
+	
+	const enMessages: Record<string, string> = {
+		'Deposit successful!': 'deposit_success',
+		'Deposit failed! Please check your network and try again.': 'deposit_failed',
+		'Invalid freeze amount': 'err_invalid_amount',
+		'No available UTXO for transaction fee': 'err_no_utxo',
+		'Transaction signing failed: No valid signature obtained': 'err_sign_failed',
+		'Transaction broadcast failed': 'err_broadcast_failed',
+		'Wallet address not found': 'err_address_not_found',
+	};
+	
+	// 检查是否包含 err_sign_missing 的特征
+	if (message.includes('交易签名失败：缺少第') || message.includes('Transaction signing failed: Missing signature for input')) {
+		return 'err_sign_missing';
+	}
+	
+	// 检查中文消息
+	if (zhMessages[message]) {
+		return zhMessages[message]!;
+	}
+	
+	// 检查英文消息
+	if (enMessages[message]) {
+		return enMessages[message]!;
+	}
+	
+	return null;
+}
+
+// 使 selectedLockLabel 依赖于 locale.value，确保语言切换时更新
+const selectedLockLabel = computed(() => {
+	// 通过访问 locale.value 使计算属性依赖于语言变化
+	locale.value; // 触发响应式更新
+	return labelForLock(selectedLockKey.value);
+});
 
 const lockPanelInlineStyle = computed<CSSProperties>(() => ({
 	maxHeight: `${lockPanelMaxPx.value}px`,
@@ -602,10 +684,20 @@ function resetForm() {
 
 async function refreshCurrentBlock() {
 	try {
-		const res = await API.fetchBlockHeaders(network);
+		// 添加超时处理，避免代理连接失败导致长时间等待
+		const timeoutPromise = new Promise<never>((_, reject) => {
+			setTimeout(() => reject(new Error('Request timeout')), 10000); // 10秒超时
+		});
+		
+		const apiPromise = API.fetchBlockHeaders(network);
+		const res = await Promise.race([apiPromise, timeoutPromise]);
 		currentBlockHeight.value = res?.[0]?.height || currentBlockHeight.value;
-	} catch {
-		// ignore
+	} catch (error) {
+		// 静默忽略错误，不影响页面功能
+		// 如果已经有缓存的高度，保持使用缓存
+		if (currentBlockHeight.value === 0 && walletInfo.curBlockHeight) {
+			currentBlockHeight.value = walletInfo.curBlockHeight;
+		}
 	}
 }
 

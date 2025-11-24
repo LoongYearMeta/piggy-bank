@@ -14,9 +14,19 @@ const runSync = () => {
 
 	const currentPromise = (async () => {
 		try {
-			await walletStore.checkAccountChange();
-		} catch {
+			// 添加超时处理，避免网络问题导致长时间阻塞
+			const timeoutPromise = new Promise<void>((_, reject) => {
+				setTimeout(() => reject(new Error('Sync timeout')), 15000); // 15秒超时
+			});
+			
+			const syncPromise = walletStore.checkAccountChange();
+			await Promise.race([syncPromise, timeoutPromise]);
+		} catch (error) {
 			// 忽略单次失败，稍后重新触发
+			// 记录错误但不影响页面加载
+			if (error instanceof Error && !error.message.includes('timeout')) {
+				console.error('钱包同步失败:', error);
+			}
 		}
 	})();
 
@@ -41,7 +51,12 @@ const handleWindowFocus = () => {
 };
 
 onMounted(() => {
-	runSync();
+	// 延迟执行初始同步，确保页面已经加载完成，避免阻塞首屏渲染
+	// 这对于移动端代理连接问题特别重要
+	setTimeout(() => {
+		runSync();
+	}, 500);
+	
 	checkInterval = setInterval(runSync, 10000);
 	document.addEventListener('visibilitychange', handleVisibilityChange);
 	window.addEventListener('focus', handleWindowFocus);
