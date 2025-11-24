@@ -1,0 +1,11 @@
+@font-face {
+	font-family: 'DemoItalicBold';
+	src: url('/fonts/演示斜黑体.otf') format('opentype');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+ul, ol, li {
+	list-style: none;
+}

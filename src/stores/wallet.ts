@@ -80,6 +80,12 @@ export const useWalletStore = defineStore('wallet', () => {
 
 	// 获取钱包余额
 	const getBalance = async () => {
+		// 如果地址不存在，直接返回，不设置 loading
+		if (!walletInfo.curAddress) {
+			isLoadingBalance.value = false;
+			return;
+		}
+		
 		try {
 			const tbc = await API.getTBCbalance(walletInfo.curAddress, network);
 			walletInfo.tbcBalance = tbc / 1000000;
@@ -93,6 +99,7 @@ export const useWalletStore = defineStore('wallet', () => {
 
 	// 获取当前区块高度
 	const getBlockHeight = async () => {
+		// 区块高度不依赖地址，可以直接获取
 		try {
 			const res = await API.fetchBlockHeaders(network);
 			walletInfo.curBlockHeight = res[0]?.height || 0;
@@ -159,15 +166,23 @@ export const useWalletStore = defineStore('wallet', () => {
 
 			// 情况1: 有地址 && 有缓存 && 地址匹配 && 未连接 -> 恢复连接
 			if (tbcAddress && cachedAddress && cachedAddress === tbcAddress && !isConnected.value) {
-				isLoadingBalance.value = true;
-				isLoadingHeight.value = true;
-				walletInfo.tbcBalance = null;
-				walletInfo.curBlockHeight = null;
 				walletInfo.curAddress = tbcAddress;
 				isConnected.value = true;
 				
-				getBalance();
-				getBlockHeight();
+				// 只有在数据不存在时才设置 loading 状态并获取数据
+				// 如果数据已经存在，说明可能是从其他途径获取的，不需要重新获取
+				const needBalance = walletInfo.tbcBalance === null;
+				const needHeight = walletInfo.curBlockHeight === null;
+				
+				if (needBalance) {
+					isLoadingBalance.value = true;
+					getBalance();
+				}
+				
+				if (needHeight) {
+					isLoadingHeight.value = true;
+					getBlockHeight();
+				}
 			}
 			// 情况2: 有地址 && 地址变化（缓存不同或当前显示不同）-> 切换账户
 			else if (tbcAddress && (cachedAddress !== tbcAddress || currentAddress !== tbcAddress)) {
@@ -183,9 +198,23 @@ export const useWalletStore = defineStore('wallet', () => {
 				getBalance();
 				getBlockHeight();
 			}
-			// 情况3: 地址相同且已连接 -> 无需操作，直接返回
+			// 情况3: 地址相同且已连接 -> 检查数据是否已存在，如果不存在则获取
 			else if (tbcAddress && tbcAddress === currentAddress && isConnected.value) {
-				// 地址没有变化，无需更新状态或重新获取数据
+				// 地址没有变化，但需要检查数据是否已存在
+				// 如果数据不存在，需要获取数据
+				const needBalance = walletInfo.tbcBalance === null && !isLoadingBalance.value;
+				const needHeight = walletInfo.curBlockHeight === null && !isLoadingHeight.value;
+				
+				if (needBalance) {
+					isLoadingBalance.value = true;
+					getBalance();
+				}
+				
+				if (needHeight) {
+					isLoadingHeight.value = true;
+					getBlockHeight();
+				}
+				
 				return true;
 			}
 			else if (!tbcAddress) {
@@ -193,6 +222,8 @@ export const useWalletStore = defineStore('wallet', () => {
 				walletInfo.curAddress = '';
 				walletInfo.tbcBalance = null;
 				walletInfo.curBlockHeight = null;
+				isLoadingBalance.value = false;
+				isLoadingHeight.value = false;
 				removeLocalStorage('tbcAddress');
 			}
 			
@@ -202,6 +233,8 @@ export const useWalletStore = defineStore('wallet', () => {
 			walletInfo.curAddress = '';
 			walletInfo.tbcBalance = null;
 			walletInfo.curBlockHeight = null;
+			isLoadingBalance.value = false;
+			isLoadingHeight.value = false;
 			removeLocalStorage('tbcAddress');
 			return false;
 		}

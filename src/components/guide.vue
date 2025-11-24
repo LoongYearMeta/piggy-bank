@@ -58,7 +58,7 @@
 
 				<div class="guide__footer">
 					<button type="button" class="btn btn--pill" @click="$emit('restart-onboarding')">
-						{{ locale === 'zh' ? '重新查看新手引导' : 'Show onboarding again' }}
+						{{ t('guide_restart_onboarding') }}
 					</button>
 				</div>
 			</div>

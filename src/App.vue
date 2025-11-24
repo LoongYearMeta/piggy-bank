@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue';
 import { useWalletStore } from './stores/wallet';
+import { useElasticScroll } from './utils/useElasticScroll';
 
 let checkInterval: NodeJS.Timeout | null = null;
+let teardownElastic: (() => void) | null = null;
 
 // 组件挂载时检查钱包状态
 onMounted(() => {
@@ -35,6 +37,7 @@ onMounted(() => {
 	};
 	
 	checkWithRetry();
+	teardownElastic = useElasticScroll();
 });
 
 // 组件卸载时清理定时器
@@ -42,6 +45,11 @@ onUnmounted(() => {
 	if (checkInterval) {
 		clearInterval(checkInterval);
 		checkInterval = null;
+	}
+	
+	if (teardownElastic) {
+		teardownElastic();
+		teardownElastic = null;
 	}
 });
 </script>
@@ -65,12 +73,6 @@ body {
 		'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	background: linear-gradient(270deg, #eef5ff 0%, #f1eef9 100%);
-	/* min-height: 100vh; */
-}
-
-#app {
-	min-height: calc(100vh - 2rem);
-	min-width: calc(100vw - 2rem);
+	/* background: linear-gradient(270deg, #eef5ff 0%, #f1eef9 100%); */
 }
 </style>
