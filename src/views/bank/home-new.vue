@@ -76,6 +76,18 @@ const tabs = computed<Array<{ key: TabKey; label: string }>>(() => [
 	{ key: 'detail', label: t('tab_detail') }
 ]);
 
+watch(
+	() => ({
+		address: walletInfo.curAddress,
+		balance: walletInfo.tbcBalance,
+		blockHeight: walletInfo.curBlockHeight
+	}),
+	(info) => {
+		console.log('[WalletCard] info updated:', info);
+	},
+	{ immediate: true }
+);
+
 // 切换前的处理
 const handleBeforeEnter = () => {
 	isSwitching.value = true;
@@ -162,15 +174,8 @@ const handleRefreshAddress = async () => {
 };
 
 // 组件挂载时检查钱包状态
-onMounted(async () => {
-	const checkWalletWithRetry = async (retryCount = 0, maxRetries = 10) => {
-		if (window.Turing) {
-			await getWalletInfo();
-		} else if (retryCount < maxRetries) {
-			setTimeout(() => checkWalletWithRetry(retryCount + 1, maxRetries), 200);
-		}
-	};
-	checkWalletWithRetry();
+onMounted(() => {
+	getWalletInfo().catch(() => {});
 });
 </script>
 

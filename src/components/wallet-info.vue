@@ -60,15 +60,8 @@ const handleGetAddress = async () => {
 };
 
 // 组件挂载时检查钱包状态（移动端可能 window.Turing 初始化较慢，需要重试）
-onMounted(async () => {
-	const checkWalletWithRetry = async (retryCount = 0, maxRetries = 10) => {
-		if (window.Turing) {
-			await getWalletInfo();
-		} else if (retryCount < maxRetries) {
-			setTimeout(() => checkWalletWithRetry(retryCount + 1, maxRetries), 200);
-		}
-	};
-	checkWalletWithRetry();
+onMounted(() => {
+	getWalletInfo().catch(() => {});
 });
 
 // 暴露方法供父组件调用

@@ -2,48 +2,58 @@
 import { onMounted, onUnmounted } from 'vue';
 import { useWalletStore } from './stores/wallet';
 
-let checkInterval: NodeJS.Timeout | null = null;
+const walletStore = useWalletStore();
 
-// 组件挂载时检查钱包状态
-onMounted(() => {
-	const walletStore = useWalletStore();
-	
-	const checkWithRetry = () => {
-		if (window.Turing) {
-			walletStore.checkAccountChange();
-			
-			// 增加检查间隔到 10 秒
-			checkInterval = setInterval(() => {
-				walletStore.checkAccountChange();
-			}, 10000);
-		} else {
-			let retryCount = 0;
-			const retryInterval = setInterval(() => {
-				retryCount++;
-				if (window.Turing) {
-					clearInterval(retryInterval);
-					walletStore.checkAccountChange();
-					
-					checkInterval = setInterval(() => {
-						walletStore.checkAccountChange();
-					}, 10000);
-				} else if (retryCount >= 10) {
-					clearInterval(retryInterval);
-				}
-			}, 100);
+let checkInterval: ReturnType<typeof setInterval> | null = null;
+let syncingPromise: Promise<void> | null = null;
+
+const runSync = () => {
+	if (syncingPromise) {
+		return syncingPromise;
+	}
+
+	const currentPromise = (async () => {
+		try {
+			await walletStore.checkAccountChange();
+		} catch {
+			// 忽略单次失败，稍后重新触发
 		}
-	};
-	
-	checkWithRetry();
+	})();
+
+	syncingPromise = currentPromise;
+	currentPromise.finally(() => {
+		if (syncingPromise === currentPromise) {
+			syncingPromise = null;
+		}
+	});
+
+	return currentPromise;
+};
+
+const handleVisibilityChange = () => {
+	if (document.visibilityState === 'visible') {
+		runSync();
+	}
+};
+
+const handleWindowFocus = () => {
+	runSync();
+};
+
+onMounted(() => {
+	runSync();
+	checkInterval = setInterval(runSync, 10000);
+	document.addEventListener('visibilitychange', handleVisibilityChange);
+	window.addEventListener('focus', handleWindowFocus);
 });
 
-// 组件卸载时清理定时器
 onUnmounted(() => {
 	if (checkInterval) {
 		clearInterval(checkInterval);
 		checkInterval = null;
 	}
-	
+	document.removeEventListener('visibilitychange', handleVisibilityChange);
+	window.removeEventListener('focus', handleWindowFocus);
 });
 </script>
 
