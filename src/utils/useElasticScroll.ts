@@ -63,7 +63,9 @@ export function useElasticScroll(options: ElasticScrollOptions = {}) {
 
 	const onTouchStart = (evt: TouchEvent) => {
 		if (evt.touches.length !== 1) return;
-		startY = evt.touches[0].clientY;
+		const touch = evt.touches[0];
+		if (!touch) return;
+		startY = touch.clientY;
 	};
 
 	const applyResistance = (delta: number) => {
@@ -75,7 +77,9 @@ export function useElasticScroll(options: ElasticScrollOptions = {}) {
 
 	const onTouchMove = (evt: TouchEvent) => {
 		if (evt.touches.length !== 1) return;
-		const touchY = evt.touches[0].clientY;
+		const touch = evt.touches[0];
+		if (!touch) return;
+		const touchY = touch.clientY;
 		const deltaY = touchY - startY;
 		const scrollTop = scrollEl.scrollTop;
 		const maxScrollTop = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);

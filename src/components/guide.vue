@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { t, locale } from '../i18n';
+import { t } from '../i18n';
 
 defineEmits<{ (e: 'restart-onboarding'): void }>();
 

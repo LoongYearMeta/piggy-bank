@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, nextTick, ref, watch } from 'vue';
-import { t } from '../i18n';
+import { t } from '../../i18n';
 import { API } from 'tbc-contract';
 
 // props: 接收父组件当前地址与网络（与旧组件保持一致的依赖来源）

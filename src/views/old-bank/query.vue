@@ -140,8 +140,8 @@ import { API } from 'tbc-contract';
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js';
 import * as tbc from 'tbc-lib-js';
-import { t, locale as localeRef, setLocale } from '../i18n';
-import { useWalletStore } from '../stores/wallet';
+import { t, locale as localeRef, setLocale } from '../../i18n';
+import { useWalletStore } from '../../stores/wallet';
 import { useBodyClass } from '@/utils/useBodyClass';
 
 // WalletInfo 组件引用
