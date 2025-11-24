@@ -290,9 +290,8 @@ watch(
 	/* PC端：确保内容不超出容器，避免微小滚动 */
 	min-height: 0;
 	height: 100%;
-	/* 允许阴影显示，但保持垂直滚动控制 */
-	overflow-y: auto;
-	overflow-x: visible;
+	/* 保持容器本身不裁剪阴影，由 tabs-panel 承担滚动 */
+	overflow: visible;
 }
 
 /* 移动端：移除高度限制 */
@@ -383,6 +382,7 @@ watch(
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
+	// margin-left: 16px;
 }
 
 .title-main {

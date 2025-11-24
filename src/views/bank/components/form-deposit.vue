@@ -63,6 +63,7 @@
 				</div>
 				<p class="error-text" v-if="lockTimeErrorText">{{ lockTimeErrorText }}</p>
 			</div>
+			<!-- submit button -->
 			<button type="button" class="submit-btn" :disabled="isSubmitting" @click="handleDeposit">
 				<span class="submit-text">{{ t('submit_deposit') }}</span>
 				<span class="button-icon" :class="iconState">
@@ -103,6 +104,7 @@
 				{{ statusMessage }}
 			</div>
 		</Transition>
+		<!-- guide card -->
 		<section class="guide-card" :class="{ 'animate-item animate-delay-2': shouldAnimate }">
       <div class="guide__body">
 				<header class="guide__header">
@@ -768,7 +770,8 @@ onBeforeUnmount(() => {
 	border-radius: 12px;
 	border: 1px solid transparent;
 	background-image:
-		linear-gradient(#ffb03b, #ffb03b), linear-gradient(90deg, #ffffff 0%, #ffffff 100%);
+		linear-gradient(#ffb03b, #ffb03b),
+		linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 100%);
 	background-origin: border-box;
 	background-clip: padding-box, border-box;
 	font-family: 'DemoItalicBold';

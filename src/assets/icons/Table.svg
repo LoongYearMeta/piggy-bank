@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="63px" height="24px" viewBox="0 0 63 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Table</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="63" height="24" rx="8"></rect>
+    </defs>
+    <g id="方案" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="中文/pc/存入资产" transform="translate(-819, -315)">
+            <g id="编组" transform="translate(0, 210)">
+                <g id="Table" transform="translate(819, 105)">
+                    <mask id="mask-2" fill="white">
+                        <use xlink:href="#path-1"></use>
+                    </mask>
+                    <g id="蒙版"></g>
+                    <path d="M9,17 C44.0735077,2.87930749 55.406841,0.87832299 43,10.9970465 C30.593159,21.11577 34.448476,21.0602491 54.5659512,10.8304839" id="路径" stroke="#FFB03A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" mask="url(#mask-2)"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

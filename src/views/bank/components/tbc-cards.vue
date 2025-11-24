@@ -390,7 +390,7 @@ onBeforeUnmount(() => {
 	display: flex;
 	gap: 16px;
 	overflow-x: auto;
-	margin: 0 16px;
+	// margin: 0 16px;
 	scrollbar-width: none;
 	padding-bottom: 8px;
 	scroll-snap-type: x mandatory;
@@ -568,6 +568,9 @@ onBeforeUnmount(() => {
 	.detail-card {
 		scroll-snap-align: start;
 		scroll-snap-stop: always;
+	}
+	.detail-carousel {
+		margin: 0 16px;
 	}
 	.empty-icon {
 		width: 40%;

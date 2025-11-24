@@ -21,7 +21,21 @@
 						:class="{ active: activeTab === tab.key }"
 						@click="handleTabChange(tab.key)"
 					>
-						<span>{{ tab.label }}</span>
+						<span class="tab-btn__label">{{ tab.label }}</span>
+						<!-- icon -->
+						<span class="tab-btn__icon" aria-hidden="true">
+							<svg viewBox="0 0 63 24" xmlns="http://www.w3.org/2000/svg" role="presentation">
+								<path
+									class="tab-btn__icon-path"
+									d="M9,17 C44.0735077,2.87930749 55.406841,0.87832299 43,10.9970465 C30.593159,21.11577 34.448476,21.0602491 54.5659512,10.8304839"
+									fill="none"
+									stroke="#FFB03A"
+									stroke-width="3"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</span>
 					</button>
 				</div>
 			<div class="tabs-panel" :class="{ 'switching': isSwitching }">
@@ -222,14 +236,16 @@ onMounted(async () => {
 
 .tabs-nav {
 	display: flex;
-	gap: 10px;
+	gap: 60px;
 	justify-content: flex-start;
 }
 
 .tab-btn {
 	position: relative;
+	display: inline-flex;
+	align-items: center;
 	border: none;
-	padding: 12px 28px;
+	padding: 12px 28px 12px 0px;
 	background: none;
 	font-family: 'DemoItalicBold';
 	font-size: 16px;
@@ -239,19 +255,37 @@ onMounted(async () => {
 	transition: color 0.2s ease;
 }
 
-.tab-btn::after {
-	content: '';
+.tab-btn__label {
+	position: relative;
+	z-index: 1;
+}
+
+.tab-btn__icon {
 	position: absolute;
-	bottom: 4px;
-	left: 46px;
-	width: 60px;
-	height: 16px;
-	background: url('../../assets/images/table-selected@2x.png') no-repeat center center;
-	background-size: cover;
-	z-index: -1;
-	transform: scaleY(0);
-	transform-origin: center;
-	transition: transform 0.3s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 24px;
+	bottom: 0px;
+	left: 16px;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+.tab-btn__icon svg {
+	width: 100%;
+	height: 100%;
+}
+
+.tab-btn__icon-path {
+	stroke: #ffb03a;
+	stroke-width: 3;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-dasharray: 120;
+	stroke-dashoffset: 120;
+	animation: none;
 }
 
 .tab-btn.active {
@@ -259,12 +293,22 @@ onMounted(async () => {
 	color: #000000;
 }
 
-.tab-btn.active::after {
-	transform: scaleY(1);
+.tab-btn.active .tab-btn__icon {
+	opacity: 1;
+}
+
+.tab-btn.active .tab-btn__icon-path {
+	animation: tab-icon-draw 0.7s ease forwards;
 }
 
 .tab-btn:not(.active):hover {
 	color: rgba(39, 40, 45, 0.7);
+}
+
+@keyframes tab-icon-draw {
+	to {
+		stroke-dashoffset: 0;
+	}
 }
 
 .tabs-panel {
@@ -272,6 +316,7 @@ onMounted(async () => {
 	display: flex;
 	flex-direction: column;
 	width: 100%;
+	/* 允许内部内容的阴影在四周自然延展 */
 	overflow: visible;
 	flex: 1 1 auto;
 	min-height: 0;
@@ -351,8 +396,13 @@ onMounted(async () => {
 	}
 
 	.tab-btn {
-		padding: 10px 22px;
+		padding: 10px 22px 10px 0;
 		font-size: 14px;
+	}
+
+	.tab-btn__icon {
+		width: 54px;
+		height: 20px;
 	}
 
 	.tabs-panel {

@@ -87,7 +87,7 @@ const createWaveAnimation = (canvas: HTMLCanvasElement): WaveController | null =
 			wavelength: 80, // 波长
 			speed: 0.6, // 速度
 			baselineRatio: 0.56, // 基准比例
-			colors: ['rgba(255, 176, 59, 0.6)', 'rgba(255, 255, 255, 0.1)'], // 颜色
+			colors: ['rgba(255, 176, 59, 0.4)', 'rgba(255, 255, 255, 0.1)'], // 颜色
 			opacity: 0.8, // 透明度
 			phaseOffset: 0, // 相位偏移
 		},
@@ -96,7 +96,7 @@ const createWaveAnimation = (canvas: HTMLCanvasElement): WaveController | null =
 			wavelength: 100,
 			speed: 0.9,
 			baselineRatio: 0.63,
-			colors: ['rgba(255, 176, 59, 0.6)', 'rgba(255, 255, 255, 0.08)'],
+			colors: ['rgba(255, 176, 59, 0.4)', 'rgba(255, 255, 255, 0.08)'],
 			opacity: 0.8,
 			phaseOffset: Math.PI / 3,
 		},
@@ -216,11 +216,6 @@ onBeforeUnmount(() => {
 	width: 100%;
 	flex-wrap: wrap;
 	align-items: stretch;
-	// 为阴影留出空间，让阴影在容器内部显示，避免被父容器 overflow: hidden 截断
-	// 阴影向右延伸约 16px (4px offset + 12px blur)，向下延伸约 20px (8px offset + 12px blur)
-	// 左侧和上方也需要空间，因为模糊效果会向各个方向延伸约 12px
-	padding: 12px 16px 20px 12px;
-	box-sizing: border-box;
 }
 
 .overview-card {
@@ -230,9 +225,7 @@ onBeforeUnmount(() => {
 	justify-content: flex-end;
 	align-items: flex-start;
 	box-sizing: border-box;
-	// 调整 flex 计算，考虑容器的 padding (左右各 12px + 16px = 28px)
-	// 原来：calc(50% - 8px)，现在需要减去额外的 padding 空间
-	flex: 1 1 calc(50% - 8px - 14px); // 减去 (12px + 16px) / 2 = 14px
+	flex: 1 1 calc(50% - 8px);
 	min-width: 240px;
 	height: 88px;
 	padding: 12px 20px 16px;
