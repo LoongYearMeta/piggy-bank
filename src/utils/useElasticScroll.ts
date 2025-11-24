@@ -65,7 +65,15 @@ export function useElasticScroll(options: ElasticScrollOptions = {}) {
 		if (evt.touches.length !== 1) return;
 		const touch = evt.touches[0];
 		if (!touch) return;
+		
+		// 如果当前有未完成的动画回弹，立即取消并重置状态
+		if (currentOffset !== 0) {
+			setTransform(0, false);
+			pulling = false;
+		}
+		
 		startY = touch.clientY;
+		pulling = false; // 确保每次触摸都从干净的状态开始
 	};
 
 	const applyResistance = (delta: number) => {
@@ -79,6 +87,12 @@ export function useElasticScroll(options: ElasticScrollOptions = {}) {
 		if (evt.touches.length !== 1) return;
 		const touch = evt.touches[0];
 		if (!touch) return;
+		
+		// 如果当前有未完成的动画回弹，先重置状态，避免状态冲突
+		if (currentOffset !== 0 && !pulling) {
+			setTransform(0, false);
+		}
+		
 		const touchY = touch.clientY;
 		const deltaY = touchY - startY;
 		const scrollTop = scrollEl.scrollTop;
@@ -87,6 +101,7 @@ export function useElasticScroll(options: ElasticScrollOptions = {}) {
 		const atBottom = scrollTop >= maxScrollTop;
 		const noScrollableContent = maxScrollTop === 0;
 
+		// 只有在真正需要下拉/上拉弹性效果时才阻止默认滚动
 		if ((atTop && deltaY > 0) || ((atBottom || noScrollableContent) && deltaY < 0)) {
 			const offset = applyResistance(deltaY);
 			setTransform(offset, false);
@@ -95,6 +110,7 @@ export function useElasticScroll(options: ElasticScrollOptions = {}) {
 			return;
 		}
 
+		// 如果之前处于下拉状态，但现在不满足下拉条件，重置状态并允许正常滚动
 		if (pulling) {
 			pulling = false;
 			setTransform(0, false);
@@ -102,9 +118,13 @@ export function useElasticScroll(options: ElasticScrollOptions = {}) {
 	};
 
 	const onTouchEnd = () => {
-		if (!pulling && currentOffset === 0) return;
+		// 无论什么情况，都确保 pulling 状态被重置
 		pulling = false;
-		setTransform(0, true);
+		
+		// 只有在有偏移量时才触发回弹动画
+		if (currentOffset !== 0) {
+			setTransform(0, true);
+		}
 	};
 
 	document.addEventListener('touchstart', onTouchStart, { passive: true });
