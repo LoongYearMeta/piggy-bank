@@ -17,8 +17,8 @@ const messages: Record<Locale, Record<string, string>> = {
 		current_address: '当前钱包地址',
 		current_balance: '当前钱包余额(TBC)',
 		current_height: '当前区块高度',
-		amount_label: '金额(TBC)',
-		input_amount_placeholder: '请输入存入金额',
+		amount_label: '存入数量(TBC)',
+		input_amount_placeholder: '请输入存入数量',
 		submit_deposit: '存入',
 		time_term: '存储期限',
 		please_select_term: '请选择存储期限',
@@ -45,9 +45,9 @@ const messages: Record<Locale, Record<string, string>> = {
 		deposit_failed: '存入失败！请检查网络连接或重试。',
 		tip_storage_term: '存储期限以区块高度为准',
 		// form errors
-		err_enter_amount: '请输入存入金额',
+		err_enter_amount: '请输入存入数量',
 		err_amount_format: '请输入正小数且最多精确到小数点后6位',
-		err_amount_exceed_balance: '存入金额不能大于钱包余额',
+		err_amount_exceed_balance: '存入数量不能大于钱包余额',
 		err_select_time: '请选择存入时间',
 		err_invalid_time: '请选择有效的存入时间',
 		// terms
@@ -71,13 +71,13 @@ const messages: Record<Locale, Record<string, string>> = {
 		// guide
 		guide_toggle_label: '使用说明',
 		guide_title: '使用说明',
-		guide_tagline: '存储你的钱！',
+		guide_tagline: '让每一枚TBC都甜睡成金！',
 		guide_section_flow: '一、操作流程',
 		guide_how_deposit: '1. 如何存入资产',
 		guide_home_info: '① 进入 “存钱罐” 主页，可查看当前钱包地址、钱包余额（TBC）及区块高度。',
 		guide_click_get_address: '② 点击 “获取地址” 按钮，可刷新 / 获取钱包地址（用于接收 TBC）。',
 		guide_deposit_steps_title: '③ 存入步骤：',
-		guide_step1_amount: '·在 “存入资产” 区域，输入要存入的金额（TBC）；',
+		guide_step1_amount: '·在 “存入资产” 区域，输入要存入的数量（TBC）；',
 		guide_step2_term: '·点击 “请选择存储期限” 下拉框，选择存储时长（期限以区块高度为准）；',
 		guide_step3_submit: '·点击 “存入” 按钮完成操作。',
 		guide_how_withdraw: '2. 如何提取资产',
@@ -99,7 +99,7 @@ const messages: Record<Locale, Record<string, string>> = {
 		tour_wallet_title: '钱包信息区',
 		tour_wallet_desc: '在这里可查看钱包地址、余额（TBC）和区块高度，并可点击“点击获取地址”刷新。',
 		tour_deposit_title: '存入资产功能区',
-		tour_deposit_desc: '输入金额、选择存储期限，点击“存入”完成操作。',
+		tour_deposit_desc: '输入存入数量、选择存储期限，点击“存入”完成操作。',
 		tour_guide_title: '说明文档',
 		tour_guide_desc: '想了解更多？点击“查看更详细的使用说明”展开文档。',
 		tour_done_title: '新手引导结束',
@@ -116,7 +116,7 @@ const messages: Record<Locale, Record<string, string>> = {
 		tab_deposit: '存入资产',
 		tab_detail: '储值明细',
 		// card labels
-		card_amount_label: '金额(TBC)',
+		card_amount_label: '存入数量(TBC)',
 		card_storage_term: '存储到期时间',
 		card_block_height: '区块高度',
 		// status
@@ -215,7 +215,7 @@ const messages: Record<Locale, Record<string, string>> = {
 		// guide
 		guide_toggle_label: 'User Guide',
 		guide_title: 'Honey BankUser Guide',
-		guide_tagline: 'Store your money!',
+		guide_tagline: 'Let Every TBC Sweetly Sleep Its Way to Gold!',
 		guide_section_flow: '( I ) How it works',
 		guide_how_deposit: '1. How to deposit',
 		guide_home_info:
