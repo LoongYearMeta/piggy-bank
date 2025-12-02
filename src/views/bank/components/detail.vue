@@ -1,5 +1,14 @@
 <template>
 	<div class="deposit-wrapper">
+		<!-- 顶部统一样式提示（提取成功 / 失败） -->
+		<Teleport to="body">
+			<Transition name="status-fade">
+				<div v-if="toastMessage" class="status-toast" :class="toastType">
+					{{ toastMessage }}
+				</div>
+			</Transition>
+		</Teleport>
+
 		<!-- 加载占位 -->
 		<Transition name="fade" mode="out-in">
 			<div v-if="isLoading" key="loading" class="loading-state">
@@ -67,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { API } from 'tbc-contract';
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js';
@@ -97,6 +106,11 @@ const unfrozenTotal = ref(0); // 可提取总额
 const frozenTotal = ref(0); // 存储中总额
 const isLoading = ref(true);
 const isUnfreezing = ref(false);
+
+// 顶部提示（与新页存入成功等保持一致）
+const toastMessage = ref('');
+const toastType = ref<'success' | 'error' | ''>('');
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 总揽卡片
 const overviewCards = computed(() => [
@@ -254,14 +268,37 @@ const handleWithdraw = async (asset: any) => {
 		await loadAssets();
 		await walletStore.getBalance();
 		await walletStore.getWalletInfo();
+		showToast('success', t('withdraw_success'));
 	} catch (error) {
 		const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
 		console.error('提取失败:', errMsg);
-		alert(t('err_withdraw_failed_prefix') + errMsg);
+		showToast('error', t('err_withdraw_failed_prefix') + errMsg);
 	} finally {
 		isUnfreezing.value = false;
 	}
 };
+
+function showToast(type: 'success' | 'error', message: string) {
+	clearToast();
+	toastType.value = type;
+	toastMessage.value = message;
+	toastTimer = setTimeout(() => {
+		clearToast();
+	}, 3000);
+}
+
+function clearToast() {
+	if (toastTimer) {
+		clearTimeout(toastTimer);
+		toastTimer = null;
+	}
+	toastMessage.value = '';
+	toastType.value = '';
+}
+
+onBeforeUnmount(() => {
+	clearToast();
+});
 
 // 监听地址变化，自动加载资产数据
 watch(
@@ -292,6 +329,38 @@ watch(
 	height: 100%;
 	/* 保持容器本身不裁剪阴影，由 tabs-panel 承担滚动 */
 	overflow: visible;
+}
+
+/* 顶部提示，与新页存入/下载等保持一致 */
+.status-toast {
+	position: fixed;
+	top: 56px;
+	left: 50%;
+	transform: translate(-50%, 0);
+	padding: 12px 24px;
+	border-radius: 12px;
+	background: rgba(0, 0, 0, 0.7);
+	color: #ffffff;
+	font-size: 14px;
+	line-height: 20px;
+	font-family: 'DemoItalicBold';
+	text-align: center;
+	z-index: 999;
+	pointer-events: none;
+	min-width: 200px;
+}
+
+.status-fade-enter-from,
+.status-fade-leave-to {
+	opacity: 0;
+	transform: translate(-50%, -8px);
+}
+
+.status-fade-enter-active,
+.status-fade-leave-active {
+	transition:
+		opacity 0.25s ease,
+		transform 0.25s ease;
 }
 
 /* 移动端：移除高度限制 */

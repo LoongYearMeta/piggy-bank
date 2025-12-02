@@ -1,7 +1,11 @@
 <template>
 	<div class="deposit-wrapper">
 		<!-- form表单 -->
-		<form @submit.prevent="handleDeposit" class="deposit-form" :class="{ 'animate-item animate-delay-1': shouldAnimate }">
+		<form
+			@submit.prevent="handleDeposit"
+			class="deposit-form"
+			:class="{ 'animate-item animate-delay-1': shouldAnimate }"
+		>
 			<!-- amount -->
 			<div class="form-item">
 				<label for="amount">{{ t('amount_label') }}</label>
@@ -99,14 +103,31 @@
 				</span>
 			</button>
 		</form>
-		<Transition name="status-fade">
-			<div v-if="statusMessage" class="status-toast" :class="statusType">
-				{{ statusMessage }}
-			</div>
-		</Transition>
+		<!-- 存入状态提示使用 Teleport 到 body，确保始终显示在分享蒙版之上 -->
+		<Teleport to="body">
+			<Transition name="status-fade">
+				<div v-if="statusMessage" class="status-toast" :class="statusType">
+					{{ statusMessage }}
+				</div>
+			</Transition>
+		</Teleport>
+		<!-- 使用 Teleport 将分享蒙版挂载到 body，避免被上层 stacking context 遮挡 -->
+		<Teleport to="body">
+			<Transition name="share-fade">
+				<Share
+					v-if="showShare"
+					:amount="lastDepositAmount"
+					:term-label="lastDepositTermLabel"
+					:timestamp="lastDepositTimestamp"
+					@close="handleShareClose"
+					@download-success="handleShareDownloadSuccess"
+					@download-fail="handleShareDownloadFail"
+				/>
+			</Transition>
+		</Teleport>
 		<!-- guide card -->
 		<section class="guide-card" :class="{ 'animate-item animate-delay-2': shouldAnimate }">
-      <div class="guide__body">
+			<div class="guide__body">
 				<header class="guide__header">
 					<p class="guide__title">{{ t('guide_title') }}: {{ t('guide_tagline') }}</p>
 				</header>
@@ -160,6 +181,7 @@ import { API } from 'tbc-contract';
 // @ts-ignore
 import piggyBank from 'tbc-contract/lib/contract/piggyBank.js';
 import * as tbc from 'tbc-lib-js';
+import Share from '../../../components/share.vue';
 
 // 定义 emits
 const emit = defineEmits<{
@@ -218,6 +240,12 @@ const successMessage = ref('');
 let statusTimer: ReturnType<typeof setTimeout> | null = null;
 const isSubmitting = ref(false);
 const iconState = ref<IconState>('idle');
+
+// 分享页相关状态
+const showShare = ref(false);
+const lastDepositAmount = ref('');
+const lastDepositTermLabel = ref('');
+const lastDepositTimestamp = ref<number | undefined>(undefined);
 
 const currentBlockHeight = ref(0);
 let iconResetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -303,13 +331,13 @@ function getErrorKeyFromMessage(message: string): string | null {
 	const zhMessages: Record<string, string> = {
 		'存入成功！': 'deposit_success',
 		'存入失败！请检查网络连接或重试。': 'deposit_failed',
-		'冻结金额无效': 'err_invalid_amount',
-		'无可用UTXO支付手续费': 'err_no_utxo',
+		冻结金额无效: 'err_invalid_amount',
+		无可用UTXO支付手续费: 'err_no_utxo',
 		'交易签名失败：未获取到有效签名': 'err_sign_failed',
-		'交易广播失败': 'err_broadcast_failed',
-		'钱包地址未获取': 'err_address_not_found',
+		交易广播失败: 'err_broadcast_failed',
+		钱包地址未获取: 'err_address_not_found',
 	};
-	
+
 	const enMessages: Record<string, string> = {
 		'Deposit successful!': 'deposit_success',
 		'Deposit failed! Please check your network and try again.': 'deposit_failed',
@@ -319,22 +347,25 @@ function getErrorKeyFromMessage(message: string): string | null {
 		'Transaction broadcast failed': 'err_broadcast_failed',
 		'Wallet address not found': 'err_address_not_found',
 	};
-	
+
 	// 检查是否包含 err_sign_missing 的特征
-	if (message.includes('交易签名失败：缺少第') || message.includes('Transaction signing failed: Missing signature for input')) {
+	if (
+		message.includes('交易签名失败：缺少第') ||
+		message.includes('Transaction signing failed: Missing signature for input')
+	) {
 		return 'err_sign_missing';
 	}
-	
+
 	// 检查中文消息
 	if (zhMessages[message]) {
 		return zhMessages[message]!;
 	}
-	
+
 	// 检查英文消息
 	if (enMessages[message]) {
 		return enMessages[message]!;
 	}
-	
+
 	return null;
 }
 
@@ -354,6 +385,18 @@ const statusMessage = computed(() => successMessage.value || submitErrorText.val
 const statusType = computed(() =>
 	successMessage.value ? 'success' : submitErrorText.value ? 'error' : '',
 );
+
+function handleShareClose() {
+	showShare.value = false;
+}
+
+function handleShareDownloadSuccess() {
+	showSuccess(t('download_success'));
+}
+
+function handleShareDownloadFail() {
+	showError(t('download_failed'));
+}
 
 const dueDate = computed(() => {
 	const now = new Date();
@@ -485,6 +528,11 @@ const handleDeposit = async () => {
 	try {
 		await freezeTBC();
 		showSuccess(t('deposit_success'));
+		// 记录本次存入数据，用于分享页展示
+		lastDepositAmount.value = formData.amount.trim();
+		lastDepositTermLabel.value = selectedLockLabel.value || '';
+		lastDepositTimestamp.value = Date.now();
+		showShare.value = true;
 		setIconState('success', true);
 		resetForm();
 	} catch (error) {
@@ -688,7 +736,7 @@ async function refreshCurrentBlock() {
 		const timeoutPromise = new Promise<never>((_, reject) => {
 			setTimeout(() => reject(new Error('Request timeout')), 10000); // 10秒超时
 		});
-		
+
 		const apiPromise = API.fetchBlockHeaders(network);
 		const res = await Promise.race([apiPromise, timeoutPromise]);
 		currentBlockHeight.value = res?.[0]?.height || currentBlockHeight.value;
@@ -1005,9 +1053,9 @@ onBeforeUnmount(() => {
 
 .status-toast {
 	position: fixed;
-	top: 50%;
+	top: 56px;
 	left: 50%;
-	transform: translate(-50%, -50%);
+	transform: translate(-50%, 0);
 	padding: 12px 24px;
 	border-radius: 12px;
 	background: rgba(0, 0, 0, 0.7);
@@ -1032,7 +1080,7 @@ onBeforeUnmount(() => {
 .status-fade-enter-from,
 .status-fade-leave-to {
 	opacity: 0;
-	transform: translate(-50%, -50%) scale(0.95);
+	transform: translate(-50%, -8px);
 }
 
 .status-fade-enter-active,
@@ -1040,6 +1088,17 @@ onBeforeUnmount(() => {
 	transition:
 		opacity 0.25s ease,
 		transform 0.25s ease;
+}
+
+/* 分享海报淡入淡出动画 */
+.share-fade-enter-from,
+.share-fade-leave-to {
+	opacity: 0;
+}
+
+.share-fade-enter-active,
+.share-fade-leave-active {
+	transition: opacity 0.25s ease;
 }
 
 .deposit-form {
@@ -1160,17 +1219,16 @@ onBeforeUnmount(() => {
 }
 
 .section-title {
-  margin: 20px 0;
+	margin: 20px 0;
 }
 
-.guide__subtitle { 
-  margin-top: 20px;
+.guide__subtitle {
+	margin-top: 20px;
 }
 
-.guide__list li{
-  padding-left: 10px;
+.guide__list li {
+	padding-left: 10px;
 }
-
 
 @media (max-width: 768px) {
 	.deposit-wrapper {

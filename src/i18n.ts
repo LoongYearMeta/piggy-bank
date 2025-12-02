@@ -17,8 +17,8 @@ const messages: Record<Locale, Record<string, string>> = {
 		current_address: '当前钱包地址',
 		current_balance: '当前钱包余额(TBC)',
 		current_height: '当前区块高度',
-		amount_label: '存入数量(TBC)',
-		input_amount_placeholder: '请输入存入数量',
+		amount_label: '数量(TBC)',
+		input_amount_placeholder: '请输入数量',
 		submit_deposit: '存入',
 		time_term: '存储期限',
 		please_select_term: '请选择存储期限',
@@ -41,6 +41,8 @@ const messages: Record<Locale, Record<string, string>> = {
 		err_load_assets: '加载资产失败',
 		withdraw_success: '提取成功！',
 		withdraw_failed: '提取失败！请检查网络连接或重试。',
+		download_success: '下载成功！',
+		download_failed: '下载失败，请重试。',
 		deposit_success: '存入成功！',
 		deposit_failed: '存入失败！请检查网络连接或重试。',
 		tip_storage_term: '存储期限以区块高度为准',
@@ -116,7 +118,7 @@ const messages: Record<Locale, Record<string, string>> = {
 		tab_deposit: '存入资产',
 		tab_detail: '储值明细',
 		// card labels
-		card_amount_label: '存入数量(TBC)',
+		card_amount_label: '数量(TBC)',
 		card_storage_term: '存储到期时间',
 		card_block_height: '区块高度',
 		// status
@@ -146,6 +148,13 @@ const messages: Record<Locale, Record<string, string>> = {
 		err_sign_count_mismatch: '签名数量不匹配：期望{expected}个，实际{actual}个',
 		// guide
 		guide_restart_onboarding: '重新查看新手引导',
+		// share
+		share_deposit_success: '存入成功！',
+		share_slogan_line1: '你只管努力，',
+		share_slogan_line2: '剩下的交给时间',
+		share_refresh: '刷新',
+		share_tip_mobile: '点击空白处关闭',
+		share_tip_pc: '点击空白处关闭',
 	},
 	en: {
 		warning_wallet_not_installed: 'Please install Turing Wallet first',
@@ -185,6 +194,8 @@ const messages: Record<Locale, Record<string, string>> = {
 		err_load_assets: 'Failed to load assets',
 		withdraw_success: 'Withdrawal successful!',
 		withdraw_failed: 'Withdrawal failed! Please check your network and try again.',
+		download_success: 'Download successful!',
+		download_failed: 'Download failed! Please try again.',
 		deposit_success: 'Deposit successful!',
 		deposit_failed: 'Deposit failed! Please check your network and try again.',
 		tip_storage_term: 'Deposit term is based on block height',
@@ -220,8 +231,7 @@ const messages: Record<Locale, Record<string, string>> = {
 		guide_how_deposit: '1. How to deposit',
 		guide_home_info:
 			'① On the Home page you can view your wallet address, balance (TBC), and block height.',
-		guide_click_get_address:
-			'② Click “Get address” to refresh/get an address (for receiving TBC).',
+		guide_click_get_address: '② Click “Get address” to refresh/get an address (for receiving TBC).',
 		guide_deposit_steps_title: '③ Deposit steps:',
 		guide_step1_amount: '·Enter the amount (TBC) in the “Deposit” section;',
 		guide_step2_term:
@@ -296,6 +306,13 @@ const messages: Record<Locale, Record<string, string>> = {
 		err_sign_count_mismatch: 'Signature count mismatch: expected {expected}, got {actual}',
 		// guide
 		guide_restart_onboarding: 'Show onboarding again',
+		// share
+		share_deposit_success: 'Deposit successful!',
+		share_slogan_line1: 'You focus on depositing,',
+		share_slogan_line2: 'and let time do the rest',
+		share_refresh: 'Refresh',
+		share_tip_mobile: 'Tap outside to close',
+		share_tip_pc: 'Click outside to close',
 	},
 };
 
