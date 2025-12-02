@@ -249,6 +249,7 @@ const lastDepositTimestamp = ref<number | undefined>(undefined);
 
 const currentBlockHeight = ref(0);
 let iconResetTimer: ReturnType<typeof setTimeout> | null = null;
+const hasShownAddressTip = ref(false);
 
 const availableBalance = computed(() => {
 	if (props.balance !== undefined && props.balance !== null) {
@@ -753,6 +754,14 @@ onMounted(() => {
 	refreshCurrentBlock();
 	window.addEventListener('resize', handleViewportChange, { passive: true });
 	window.addEventListener('scroll', handleViewportChange, { passive: true });
+
+	// 首次进入且缓存中没有地址时，给出“请先获取地址”提示，优化新用户体验
+	setTimeout(() => {
+		if (!hasShownAddressTip.value && !walletInfo.curAddress) {
+			hasShownAddressTip.value = true;
+			showError(t('tip_get_address_first'));
+		}
+	}, 800);
 });
 
 onBeforeUnmount(() => {
