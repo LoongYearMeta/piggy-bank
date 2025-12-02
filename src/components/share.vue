@@ -109,6 +109,7 @@
 		<div v-if="isDownloading" class="download-loading">
 			<div class="loading-spinner"></div>
 			<p class="loading-text">{{ t('loading') }}</p>
+			<p class="loading-text">{{ dataUrl }}</p>
 		</div>
 	</div>
 </template>
@@ -281,7 +282,7 @@ const quotesEn: string[] = [
 	'Store ease, let days embroider patterns slowly.',
 	'Store this thought, future comes smiling.',
 ];
-
+const dataUrl = ref<string | null>(null);
 // 过滤过长的英文标语，避免超过两行显示
 const MAX_EN_QUOTE_LENGTH = 40;
 const quotesEnShort: string[] = quotesEn.filter((s) => s.length <= MAX_EN_QUOTE_LENGTH);
@@ -485,8 +486,8 @@ async function handleDownload() {
 		posterObjectUrl.value = objectUrl;
 
 		// 移动端展示 / 复制使用的 dataURL（可在外部浏览器中直接打开）
-		const dataUrlForCopy = canvas.toDataURL('image/png');
-		posterDataUrl.value = dataUrlForCopy;
+		dataUrl.value = canvas.toDataURL('image/png');
+		posterDataUrl.value = dataUrl.value;
 
 		const downloadPromise = new Promise<void>((resolve, reject) => {
 			if (isMobile.value) {
@@ -516,6 +517,7 @@ async function handleDownload() {
 
 							// 退化为分享链接 / DataURL
 							const dataUrl = canvas.toDataURL('image/png');
+							// 分享链接
 							await nav.share({
 								title: 'Honey Bank',
 								text: locale.value === 'zh'
