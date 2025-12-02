@@ -10,9 +10,9 @@
 						<span>{{ displayTerm }}</span>
 					</p>
 				</div>
-				<!-- 移动端 WebView 中隐藏下载按钮，避免无效交互；PC 和普通浏览器正常展示 -->
+				<!-- 移动端整体隐藏下载按钮，PC 正常展示 -->
 				<button
-					v-if="!isMobileWebView"
+					v-if="!isMobile"
 					type="button"
 					class="shared-download"
 					:class="{ 'is-loading': isDownloading }"
@@ -297,14 +297,6 @@ const saveTip = computed(() => (locale.value === 'zh' ? t('share_tip_mobile') : 
 const isMobile = computed(() =>
 	/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
 );
-
-// 尝试基于 UA 粗略识别移动端 WebView 场景（如部分钱包内嵌浏览器）
-const isMobileWebView = computed(() => {
-	const ua = navigator.userAgent || '';
-	// 常见 WebView 关键字：WebView / wv; / MiniProgram / 以及部分钱包自带标识
-	const webViewLike = /WebView|wv;|MiniProgram|wallet/i.test(ua);
-	return isMobile.value && webViewLike;
-});
 
 const waitBgImageLoad = (imageUrl: string): Promise<HTMLImageElement> => {
 	return new Promise((resolve, reject) => {
