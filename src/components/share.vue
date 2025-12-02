@@ -79,12 +79,27 @@
 					</button>
 				</p>
 			</section>
-			<!-- 移动端额外提供一个真实链接，方便长按或点击下载海报 -->
-			<p v-if="isMobile && posterUrl" class="poster-hint">
-				<a :href="posterUrl" :download="posterFileName">
-					{{ locale === 'zh' ? '如未弹出分享面板，可点击此处或长按保存海报' : 'If sharing did not appear, tap or long‑press here to save the poster.' }}
-				</a>
-			</p>
+			<!-- 移动端额外提供一个 dataURL 链接，方便长按或复制后在系统浏览器中打开 -->
+			<div v-if="isMobile && posterDataUrl" class="poster-hint">
+				<p class="poster-hint-text">
+					{{ locale === 'zh'
+						? '如果未弹出系统分享面板，可以复制下面的链接，在手机浏览器中打开后保存海报：'
+						: 'If no system share sheet appeared, copy the link below and open it in your mobile browser to save the poster:' }}
+				</p>
+				<textarea
+					class="poster-link-area"
+					readonly
+					:value="posterDataUrl"
+					rows="3"
+				></textarea>
+				<button
+					type="button"
+					class="poster-copy-btn"
+					@click.stop="copyPosterLink"
+				>
+					{{ locale === 'zh' ? '复制链接' : 'Copy link' }}
+				</button>
+			</div>
 			<img src="@/assets/images/shared-logo@2x.png" alt="logo" class="shared-logo" />
 			<p class="share-tip-global">
 				{{ saveTip }}
@@ -121,8 +136,24 @@ const currentTime = ref<Date | null>(null);
 const cardRef = ref<HTMLElement | null>(null);
 const isDownloading = ref(false);
 const sloganIndex = ref(0);
-const posterUrl = ref<string | null>(null);
+// 桌面端下载用的 objectURL（仅当前 WebView 有效）
+const posterObjectUrl = ref<string | null>(null);
+// 移动端展示 / 复制用的 dataURL（可粘贴到系统浏览器）
+const posterDataUrl = ref<string | null>(null);
 const posterFileName = ref<string>('');
+
+async function copyPosterLink() {
+	if (!posterDataUrl.value) return;
+	try {
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			await navigator.clipboard.writeText(posterDataUrl.value);
+			// 复制成功仅做静默处理，提示交由外层 toast 系统处理更统一
+		}
+	} catch (e) {
+		// 某些 WebView 可能不支持 clipboard API，静默失败即可，用户仍可手动长按选择复制
+		console.warn('Copy poster link failed', e);
+	}
+}
 
 function refreshTime() {
 	// 更新时间
@@ -435,20 +466,27 @@ async function handleDownload() {
 
 		const canvas = finalCanvas;
 
-		// 预先生成 Blob 和本地 URL，供下载和手动保存使用
+		// 预先生成 Blob（桌面下载 / WebShare 文件用）
 		const blob = await new Promise<Blob | null>((resolve) =>
 			canvas.toBlob((b) => resolve(b), 'image/png'),
 		);
 		if (!blob) {
 			throw new Error('Failed to create blob');
 		}
-		if (posterUrl.value) {
-			URL.revokeObjectURL(posterUrl.value);
-		}
+
 		const fileName = `honey-bank-${Date.now()}.png`;
-		const objectUrl = URL.createObjectURL(blob);
-		posterUrl.value = objectUrl;
 		posterFileName.value = fileName;
+
+		// 桌面端下载使用的 objectURL
+		if (posterObjectUrl.value) {
+			URL.revokeObjectURL(posterObjectUrl.value);
+		}
+		const objectUrl = URL.createObjectURL(blob);
+		posterObjectUrl.value = objectUrl;
+
+		// 移动端展示 / 复制使用的 dataURL（可在外部浏览器中直接打开）
+		const dataUrlForCopy = canvas.toDataURL('image/png');
+		posterDataUrl.value = dataUrlForCopy;
 
 		const downloadPromise = new Promise<void>((resolve, reject) => {
 			if (isMobile.value) {
@@ -521,9 +559,13 @@ async function handleDownload() {
 					}
 				}
 			} else {
-				// 桌面端：保持下载为文件的行为（使用已生成的 objectUrl）
+				// 桌面端：保持下载为文件的行为（使用已生成的 objectURL）
+				if (!posterObjectUrl.value) {
+					reject(new Error('No object URL for download'));
+					return;
+				}
 				const a = document.createElement('a');
-				a.href = objectUrl;
+				a.href = posterObjectUrl.value;
 				a.download = fileName;
 				document.body.appendChild(a);
 				a.click();
@@ -534,10 +576,17 @@ async function handleDownload() {
 
 		await downloadPromise;
 
-		// 下载成功后，关闭蒙版并通知父组件展示统一的成功提示
+		// 下载成功后
 		isDownloading.value = false;
-		handleClose();
-		emit('download-success');
+
+		if (isMobile.value) {
+			// 移动端（包括钱包 WebView）：不强制关闭蒙版，方便用户看到提示和复制链接
+			emit('download-success');
+		} else {
+			// 桌面端：保持原有行为，直接关闭蒙版并提示成功
+			handleClose();
+			emit('download-success');
+		}
 	} catch (error) {
 		console.error('Failed to download share image:', error);
 		isDownloading.value = false;
@@ -666,14 +715,46 @@ function handleClose() {
 }
 
 .poster-hint {
-	margin-top: 4px;
-	font-size: 10px;
-	color: rgba(0, 0, 0, 0.4);
+	margin-top: 6px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.8);
+	backdrop-filter: blur(4px);
 }
 
-.poster-hint a {
-	color: inherit;
-	text-decoration: underline;
+.poster-hint-text {
+	margin: 0 0 4px;
+	font-size: 10px;
+	color: rgba(0, 0, 0, 0.55);
+	line-height: 1.4;
+}
+
+.poster-link-area {
+	width: 100%;
+	box-sizing: border-box;
+	resize: none;
+	border-radius: 6px;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	font-size: 10px;
+	line-height: 1.3;
+	padding: 4px 6px;
+	color: #333;
+	background: rgba(255, 255, 255, 0.95);
+}
+
+.poster-copy-btn {
+	margin-top: 4px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 3px 8px;
+	font-size: 10px;
+	color: #fff;
+	background: #ffb03b;
+	border-radius: 999px;
+	border: none;
+	outline: none;
+	cursor: pointer;
 }
 
 /* 暖心短句切换打字机效果 */
