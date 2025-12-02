@@ -10,7 +10,9 @@
 						<span>{{ displayTerm }}</span>
 					</p>
 				</div>
+				<!-- 移动端 WebView 中隐藏下载按钮，避免无效交互；PC 和普通浏览器正常展示 -->
 				<button
+					v-if="!isMobileWebView"
 					type="button"
 					class="shared-download"
 					:class="{ 'is-loading': isDownloading }"
@@ -79,27 +81,6 @@
 					</button>
 				</p>
 			</section>
-			<!-- 移动端额外提供一个 dataURL 链接，方便长按或复制后在系统浏览器中打开 -->
-			<div v-if="isMobile && posterDataUrl" class="poster-hint">
-				<p class="poster-hint-text">
-					{{ locale === 'zh'
-						? '如果未弹出系统分享面板，可以复制下面的链接，在手机浏览器中打开后保存海报：'
-						: 'If no system share sheet appeared, copy the link below and open it in your mobile browser to save the poster:' }}
-				</p>
-				<textarea
-					class="poster-link-area"
-					readonly
-					:value="posterDataUrl"
-					rows="3"
-				></textarea>
-				<button
-					type="button"
-					class="poster-copy-btn"
-					@click.stop="copyPosterLink"
-				>
-					{{ locale === 'zh' ? '复制链接' : 'Copy link' }}
-				</button>
-			</div>
 			<img src="@/assets/images/shared-logo@2x.png" alt="logo" class="shared-logo" />
 			<p class="share-tip-global">
 				{{ saveTip }}
@@ -137,24 +118,7 @@ const currentTime = ref<Date | null>(null);
 const cardRef = ref<HTMLElement | null>(null);
 const isDownloading = ref(false);
 const sloganIndex = ref(0);
-// 桌面端下载用的 objectURL（仅当前 WebView 有效）
-const posterObjectUrl = ref<string | null>(null);
-// 移动端展示 / 复制用的 dataURL（可粘贴到系统浏览器）
-const posterDataUrl = ref<string | null>(null);
 const posterFileName = ref<string>('');
-
-async function copyPosterLink() {
-	if (!posterDataUrl.value) return;
-	try {
-		if (navigator.clipboard && navigator.clipboard.writeText) {
-			await navigator.clipboard.writeText(posterDataUrl.value);
-			// 复制成功仅做静默处理，提示交由外层 toast 系统处理更统一
-		}
-	} catch (e) {
-		// 某些 WebView 可能不支持 clipboard API，静默失败即可，用户仍可手动长按选择复制
-		console.warn('Copy poster link failed', e);
-	}
-}
 
 function refreshTime() {
 	// 更新时间
@@ -334,6 +298,14 @@ const isMobile = computed(() =>
 	/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
 );
 
+// 尝试基于 UA 粗略识别移动端 WebView 场景（如部分钱包内嵌浏览器）
+const isMobileWebView = computed(() => {
+	const ua = navigator.userAgent || '';
+	// 常见 WebView 关键字：WebView / wv; / MiniProgram / 以及部分钱包自带标识
+	const webViewLike = /WebView|wv;|MiniProgram|wallet/i.test(ua);
+	return isMobile.value && webViewLike;
+});
+
 const waitBgImageLoad = (imageUrl: string): Promise<HTMLImageElement> => {
 	return new Promise((resolve, reject) => {
 		const img = new Image();
@@ -467,36 +439,22 @@ async function handleDownload() {
 
 		const canvas = finalCanvas;
 
-		// 预先生成 Blob（桌面下载 / WebShare 文件用）
-		const blob = await new Promise<Blob | null>((resolve) =>
-			canvas.toBlob((b) => resolve(b), 'image/png'),
-		);
-		if (!blob) {
-			throw new Error('Failed to create blob');
-		}
-
+		// 下载图片（回退到原先的正常版本逻辑）
 		const fileName = `honey-bank-${Date.now()}.png`;
 		posterFileName.value = fileName;
-
-		// 桌面端下载使用的 objectURL
-		if (posterObjectUrl.value) {
-			URL.revokeObjectURL(posterObjectUrl.value);
-		}
-		const objectUrl = URL.createObjectURL(blob);
-		posterObjectUrl.value = objectUrl;
-
-		// 移动端展示 / 复制使用的 dataURL（可在外部浏览器中直接打开）
-		dataUrl.value = canvas.toDataURL('image/png');
-		posterDataUrl.value = dataUrl.value;
 
 		const downloadPromise = new Promise<void>((resolve, reject) => {
 			if (isMobile.value) {
 				// 优先尝试调用移动端原生分享面板（Web Share API）
 				const nav: any = navigator;
 				if (nav && typeof nav.share === 'function') {
-					(async () => {
+					canvas.toBlob(async (blob: Blob | null) => {
+						if (!blob) {
+							reject(new Error('Failed to create blob for sharing'));
+							return;
+						}
 						try {
-							// 优先使用文件分享（部分浏览器支持）
+							// 如果支持文件分享（Web Share Level 2）
 							if (
 								nav.canShare &&
 								nav.canShare({
@@ -515,9 +473,8 @@ async function handleDownload() {
 								return;
 							}
 
-							// 退化为分享链接 / DataURL
+							// 否则退化为分享链接/DataURL（部分浏览器只支持 text/url）
 							const dataUrl = canvas.toDataURL('image/png');
-							// 分享链接
 							await nav.share({
 								title: 'Honey Bank',
 								text: locale.value === 'zh'
@@ -527,7 +484,7 @@ async function handleDownload() {
 							});
 							resolve();
 						} catch (err) {
-							// 用户取消分享不视为错误，其余情况回退到打开新窗口
+							// 用户取消或不支持文件分享时，退回到 window.open 方案
 							console.warn('navigator.share failed, fallback to window.open', err);
 							const dataUrl = canvas.toDataURL('image/png');
 							const win = window.open();
@@ -543,9 +500,9 @@ async function handleDownload() {
 								reject(new Error('Failed to open window'));
 							}
 						}
-					})();
+					}, 'image/png');
 				} else {
-					// 不支持 Web Share API，保持原有行为：新窗口展示图片，用户长按保存
+					// 不支持 Web Share，保留原有“新窗口展示图片，长按保存/分享”
 					const dataUrl = canvas.toDataURL('image/png');
 					const win = window.open();
 					if (win) {
@@ -561,34 +518,30 @@ async function handleDownload() {
 					}
 				}
 			} else {
-				// 桌面端：保持下载为文件的行为（使用已生成的 objectURL）
-				if (!posterObjectUrl.value) {
-					reject(new Error('No object URL for download'));
-					return;
-				}
-				const a = document.createElement('a');
-				a.href = posterObjectUrl.value;
-				a.download = fileName;
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-				resolve();
+				// 桌面端保持原来的直接下载文件
+				canvas.toBlob((blob: Blob | null) => {
+					if (!blob) {
+						reject(new Error('Failed to create blob'));
+						return;
+					}
+					const url = URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.href = url;
+					a.download = fileName;
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+					URL.revokeObjectURL(url);
+					resolve();
+				}, 'image/png');
 			}
 		});
 
 		await downloadPromise;
 
-		// 下载成功后
 		isDownloading.value = false;
-
-		if (isMobile.value) {
-			// 移动端（包括钱包 WebView）：不强制关闭蒙版，方便用户看到提示和复制链接
-			emit('download-success');
-		} else {
-			// 桌面端：保持原有行为，直接关闭蒙版并提示成功
-			handleClose();
-			emit('download-success');
-		}
+		handleClose();
+		emit('download-success');
 	} catch (error) {
 		console.error('Failed to download share image:', error);
 		isDownloading.value = false;
