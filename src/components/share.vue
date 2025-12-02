@@ -431,20 +431,75 @@ async function handleDownload() {
 		const fileName = `honey-bank-${Date.now()}.png`;
 		const downloadPromise = new Promise<void>((resolve, reject) => {
 			if (isMobile.value) {
-				const dataUrl = canvas.toDataURL('image/png');
-				const win = window.open();
-				if (win) {
-					win.document.title = fileName;
-					const img = win.document.createElement('img');
-					img.src = dataUrl;
-					img.style.width = '100%';
-					img.style.maxWidth = '100%';
-					win.document.body.appendChild(img);
-					resolve();
+				// 优先尝试调用移动端原生分享面板（Web Share API）
+				const nav: any = navigator;
+				if (nav && typeof nav.share === 'function') {
+					canvas.toBlob(async (blob: Blob | null) => {
+						if (!blob) {
+							reject(new Error('Failed to create blob for sharing'));
+							return;
+						}
+						try {
+							// 优先使用文件分享（部分浏览器支持）
+							if (nav.canShare && nav.canShare({ files: [new File([blob], fileName, { type: 'image/png' })] })) {
+								const file = new File([blob], fileName, { type: 'image/png' });
+								await nav.share({
+									files: [file],
+									title: 'Honey Bank',
+									text: locale.value === 'zh'
+										? '分享你的存入卡片'
+										: 'Share your Honey Bank deposit card',
+								});
+								resolve();
+								return;
+							}
+
+							// 退化为分享链接 / DataURL
+							const dataUrl = canvas.toDataURL('image/png');
+							await nav.share({
+								title: 'Honey Bank',
+								text: locale.value === 'zh'
+									? '分享你的存入卡片'
+									: 'Share your Honey Bank deposit card',
+								url: dataUrl,
+							});
+							resolve();
+						} catch (err) {
+							// 用户取消分享不视为错误，其余情况回退到打开新窗口
+							console.warn('navigator.share failed, fallback to window.open', err);
+							const dataUrl = canvas.toDataURL('image/png');
+							const win = window.open();
+							if (win) {
+								win.document.title = fileName;
+								const img = win.document.createElement('img');
+								img.src = dataUrl;
+								img.style.width = '100%';
+								img.style.maxWidth = '100%';
+								win.document.body.appendChild(img);
+								resolve();
+							} else {
+								reject(new Error('Failed to open window'));
+							}
+						}
+					}, 'image/png');
 				} else {
-					reject(new Error('Failed to open window'));
+					// 不支持 Web Share API，保持原有行为：新窗口展示图片，用户长按保存
+					const dataUrl = canvas.toDataURL('image/png');
+					const win = window.open();
+					if (win) {
+						win.document.title = fileName;
+						const img = win.document.createElement('img');
+						img.src = dataUrl;
+						img.style.width = '100%';
+						img.style.maxWidth = '100%';
+						win.document.body.appendChild(img);
+						resolve();
+					} else {
+						reject(new Error('Failed to open window'));
+					}
 				}
 			} else {
+				// 桌面端：保持下载为文件的行为
 				canvas.toBlob((blob: Blob | null) => {
 					if (!blob) {
 						reject(new Error('Failed to create blob'));
