@@ -79,6 +79,12 @@
 					</button>
 				</p>
 			</section>
+			<!-- 移动端额外提供一个真实链接，方便长按或点击下载海报 -->
+			<p v-if="isMobile && posterUrl" class="poster-hint">
+				<a :href="posterUrl" :download="posterFileName">
+					{{ locale === 'zh' ? '如未弹出分享面板，可点击此处或长按保存海报' : 'If sharing did not appear, tap or long‑press here to save the poster.' }}
+				</a>
+			</p>
 			<img src="@/assets/images/shared-logo@2x.png" alt="logo" class="shared-logo" />
 			<p class="share-tip-global">
 				{{ saveTip }}
@@ -115,6 +121,8 @@ const currentTime = ref<Date | null>(null);
 const cardRef = ref<HTMLElement | null>(null);
 const isDownloading = ref(false);
 const sloganIndex = ref(0);
+const posterUrl = ref<string | null>(null);
+const posterFileName = ref<string>('');
 
 function refreshTime() {
 	// 更新时间
@@ -427,21 +435,35 @@ async function handleDownload() {
 
 		const canvas = finalCanvas;
 
-		// 下载图片
+		// 预先生成 Blob 和本地 URL，供下载和手动保存使用
+		const blob = await new Promise<Blob | null>((resolve) =>
+			canvas.toBlob((b) => resolve(b), 'image/png'),
+		);
+		if (!blob) {
+			throw new Error('Failed to create blob');
+		}
+		if (posterUrl.value) {
+			URL.revokeObjectURL(posterUrl.value);
+		}
 		const fileName = `honey-bank-${Date.now()}.png`;
+		const objectUrl = URL.createObjectURL(blob);
+		posterUrl.value = objectUrl;
+		posterFileName.value = fileName;
+
 		const downloadPromise = new Promise<void>((resolve, reject) => {
 			if (isMobile.value) {
 				// 优先尝试调用移动端原生分享面板（Web Share API）
 				const nav: any = navigator;
 				if (nav && typeof nav.share === 'function') {
-					canvas.toBlob(async (blob: Blob | null) => {
-						if (!blob) {
-							reject(new Error('Failed to create blob for sharing'));
-							return;
-						}
+					(async () => {
 						try {
 							// 优先使用文件分享（部分浏览器支持）
-							if (nav.canShare && nav.canShare({ files: [new File([blob], fileName, { type: 'image/png' })] })) {
+							if (
+								nav.canShare &&
+								nav.canShare({
+									files: [new File([blob], fileName, { type: 'image/png' })],
+								})
+							) {
 								const file = new File([blob], fileName, { type: 'image/png' });
 								await nav.share({
 									files: [file],
@@ -481,7 +503,7 @@ async function handleDownload() {
 								reject(new Error('Failed to open window'));
 							}
 						}
-					}, 'image/png');
+					})();
 				} else {
 					// 不支持 Web Share API，保持原有行为：新窗口展示图片，用户长按保存
 					const dataUrl = canvas.toDataURL('image/png');
@@ -499,22 +521,14 @@ async function handleDownload() {
 					}
 				}
 			} else {
-				// 桌面端：保持下载为文件的行为
-				canvas.toBlob((blob: Blob | null) => {
-					if (!blob) {
-						reject(new Error('Failed to create blob'));
-						return;
-					}
-					const url = URL.createObjectURL(blob);
-					const a = document.createElement('a');
-					a.href = url;
-					a.download = fileName;
-					document.body.appendChild(a);
-					a.click();
-					document.body.removeChild(a);
-					URL.revokeObjectURL(url);
-					resolve();
-				}, 'image/png');
+				// 桌面端：保持下载为文件的行为（使用已生成的 objectUrl）
+				const a = document.createElement('a');
+				a.href = objectUrl;
+				a.download = fileName;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				resolve();
 			}
 		});
 
@@ -649,6 +663,17 @@ function handleClose() {
 	font-size: 12px;
 	color: rgba(0, 0, 0, 0.6);
 	/* margin-bottom: 16px; */
+}
+
+.poster-hint {
+	margin-top: 4px;
+	font-size: 10px;
+	color: rgba(0, 0, 0, 0.4);
+}
+
+.poster-hint a {
+	color: inherit;
+	text-decoration: underline;
 }
 
 /* 暖心短句切换打字机效果 */
