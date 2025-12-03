@@ -681,6 +681,7 @@ function handleClose() {
 .shared-logo {
 	width: 90px;
 	height: 90px;
+	margin-top: 16px;
 }
 
 .shared-download {
