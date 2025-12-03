@@ -1,6 +1,13 @@
 <template>
   <div class="share-mask" @click.self="handleClose">
-    <div class="share-card" ref="cardRef" :style="{ backgroundImage: `url(${sharedBg})` }">
+    <div 
+      class="share-card" 
+      ref="cardRef" 
+      :style="{
+        backgroundImage: `url(${sharedBg})`,
+        transform: isMobile ? `scale(${cardScale})` : 'none',
+      }"
+    >
       <header class="share-header">
         <div class="share-title">
           <p class="title-main">{{ t('share_deposit_success') }}</p>
@@ -121,11 +128,13 @@ const isDownloading = ref(false);
 const sloganIndex = ref(0);
 const posterFileName = ref<string>('');
 
-// 窗口宽度（响应式）
+// 窗口宽度和高度（响应式）
 const windowWidth = ref<number>(typeof window !== 'undefined' ? window.innerWidth : 768);
+const windowHeight = ref<number>(typeof window !== 'undefined' ? window.innerHeight : 768);
 // 处理窗口大小变化
 function handleResize() {
   windowWidth.value = window.innerWidth;
+  windowHeight.value = window.innerHeight;
 }
 
 // 过滤过长的英文标语，避免超过两行显示
@@ -151,8 +160,9 @@ function refreshTime() {
 
 onMounted(() => {
   currentTime.value = props.timestamp ? new Date(props.timestamp) : new Date();
-  // 初始化窗口宽度
+  // 初始化窗口宽度和高度
   windowWidth.value = window.innerWidth;
+  windowHeight.value = window.innerHeight;
   // 监听窗口大小变化
   window.addEventListener('resize', handleResize);
 });
@@ -209,6 +219,28 @@ const saveTip = computed(() => (locale.value === 'zh' ? t('share_tip_mobile') : 
 
 // 移动端判断：屏幕宽度 < 768px
 const isMobile = computed(() => windowWidth.value < 768);
+
+// 移动端卡片缩放比例（保持256:310比例，四周留安全距离）
+const cardScale = computed(() => {
+  if (!isMobile.value) return 1;
+  
+  const baseWidth = 256;
+  const baseHeight = 310;
+  
+  // 安全距离：左右各32px，上下各60px（底部还要为提示文字留空间）
+  const horizontalPadding = 64; // 左右各32px
+  const verticalPadding = 120; // 上下各60px
+  
+  // 计算基于宽度和高度允许的最大缩放比例
+  const maxWidthScale = (windowWidth.value - horizontalPadding) / baseWidth;
+  const maxHeightScale = (windowHeight.value - verticalPadding) / baseHeight;
+  
+  // 取较小值，确保不超出屏幕，且至少放大到1.2倍
+  const scale = Math.max(1.2, Math.min(maxWidthScale, maxHeightScale));
+  
+  // 限制最大缩放比例，避免过大
+  return Math.min(scale, 2.0);
+});
 // 等待背景图片加载完成
 const waitBgImageLoad = (imageUrl: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
@@ -496,6 +528,10 @@ function handleClose() {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
+  /* 确保缩放时以中心点为基准 */
+  transform-origin: center center;
+  /* 优化缩放性能 */
+  will-change: transform;
 }
 
 .share-tip-global {
