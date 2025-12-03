@@ -23,7 +23,7 @@ export const useWalletStore = defineStore('wallet', () => {
 	const isLoadingHeight = ref(false);
 
 	const isConnected = ref(false);
-	
+
 	// 用于控制检查频率的时间戳
 	let lastCheckTime = 0;
 	const CHECK_INTERVAL = 5000; // 最小检查间隔：5秒（避免过度频繁的调用）
@@ -140,13 +140,13 @@ export const useWalletStore = defineStore('wallet', () => {
 			isLoadingBalance.value = false;
 			return;
 		}
-		
+
 		try {
 			// 添加超时处理，避免代理连接失败导致长时间等待
 			const timeoutPromise = new Promise<never>((_, reject) => {
 				setTimeout(() => reject(new Error('Request timeout')), 10000); // 10秒超时
 			});
-			
+
 			const apiPromise = API.getTBCbalance(walletInfo.curAddress, network);
 			const tbc = await Promise.race([apiPromise, timeoutPromise]);
 			walletInfo.tbcBalance = tbc / 1000000;
@@ -178,7 +178,7 @@ export const useWalletStore = defineStore('wallet', () => {
 			const timeoutPromise = new Promise<never>((_, reject) => {
 				setTimeout(() => reject(new Error('Request timeout')), 10000); // 10秒超时
 			});
-			
+
 			const apiPromise = API.fetchBlockHeaders(network);
 			const res = await Promise.race([apiPromise, timeoutPromise]);
 			walletInfo.curBlockHeight = res[0]?.height || 0;
@@ -230,29 +230,33 @@ export const useWalletStore = defineStore('wallet', () => {
 
 	// 检查钱包账户是否变更
 	const checkAccountChange = async (): Promise<boolean> => {
-		ensureDataFetched();
-
 		try {
 			const turing = await waitForTuring();
 			const now = Date.now();
 			const currentAddress = walletInfo.curAddress;
 			const cachedAddress = getLocalStorage(ADDRESS_CACHE_KEY);
-			
+
 			// 如果钱包已连接且有地址，并且距离上次检查时间太短，则跳过本次检查
 			// 这样可以减少不必要的 API 调用和日志输出
 			// 但是首次加载时（lastCheckTime === 0）或者有缓存地址但未连接时，需要强制检查
 			const isFirstCheck = lastCheckTime === 0;
-			const shouldSkipCheck = isConnected.value && currentAddress && !isFirstCheck && (now - lastCheckTime) < CHECK_INTERVAL;
-			
+			const shouldSkipCheck =
+				isConnected.value &&
+				currentAddress &&
+				!isFirstCheck &&
+				now - lastCheckTime < CHECK_INTERVAL;
+
 			// 如果有缓存地址但未连接，需要强制检查以恢复连接
 			const shouldForceCheck = cachedAddress && !isConnected.value;
-			
+
 			if (shouldSkipCheck && !shouldForceCheck) {
+				// 即使跳过检查，也要确保数据已获取（在 Turing 就绪后）
+				ensureDataFetched();
 				return true;
 			}
-			
+
 			lastCheckTime = now;
-			
+
 			// 获取地址（不主动 connect，避免反复弹窗）
 			const { tbcAddress } = await turing.getAddress();
 
@@ -260,17 +264,17 @@ export const useWalletStore = defineStore('wallet', () => {
 			if (tbcAddress && cachedAddress && cachedAddress === tbcAddress && !isConnected.value) {
 				walletInfo.curAddress = tbcAddress;
 				isConnected.value = true;
-				
+
+				// 恢复连接后，确保数据已获取（在 Turing 就绪后）
 				// 只有在数据不存在时才设置 loading 状态并获取数据
-				// 如果数据已经存在，说明可能是从其他途径获取的，不需要重新获取
-				const needBalance = walletInfo.tbcBalance === null;
-				const needHeight = walletInfo.curBlockHeight === null;
-				
+				const needBalance = walletInfo.tbcBalance === null && !isLoadingBalance.value;
+				const needHeight = walletInfo.curBlockHeight === null && !isLoadingHeight.value;
+
 				if (needBalance) {
 					isLoadingBalance.value = true;
 					getBalance();
 				}
-				
+
 				if (needHeight) {
 					isLoadingHeight.value = true;
 					getBlockHeight();
@@ -284,11 +288,11 @@ export const useWalletStore = defineStore('wallet', () => {
 				walletInfo.curBlockHeight = null;
 				walletInfo.curAddress = tbcAddress;
 				isConnected.value = true;
-				
+
 				setLocalStorage(ADDRESS_CACHE_KEY, tbcAddress, 1000 * 60 * 60 * 24 * 7);
 				removeLocalStorage(BALANCE_CACHE_KEY);
 				removeLocalStorage(HEIGHT_CACHE_KEY);
-				
+
 				getBalance();
 				getBlockHeight();
 			}
@@ -296,22 +300,9 @@ export const useWalletStore = defineStore('wallet', () => {
 			else if (tbcAddress && tbcAddress === currentAddress && isConnected.value) {
 				// 地址没有变化，但需要检查数据是否已存在
 				// 如果数据不存在，需要获取数据
-				const needBalance = walletInfo.tbcBalance === null && !isLoadingBalance.value;
-				const needHeight = walletInfo.curBlockHeight === null && !isLoadingHeight.value;
-				
-				if (needBalance) {
-					isLoadingBalance.value = true;
-					getBalance();
-				}
-				
-				if (needHeight) {
-					isLoadingHeight.value = true;
-					getBlockHeight();
-				}
-				
+				ensureDataFetched();
 				return true;
-			}
-			else if (!tbcAddress) {
+			} else if (!tbcAddress) {
 				isConnected.value = false;
 				if (!cachedAddress) {
 					walletInfo.curAddress = '';
@@ -323,7 +314,11 @@ export const useWalletStore = defineStore('wallet', () => {
 				isLoadingBalance.value = false;
 				isLoadingHeight.value = false;
 			}
-			
+
+			// 在所有成功的情况下，确保数据已获取（在 Turing 就绪后）
+			// 这作为兜底逻辑，确保数据获取不会遗漏
+			ensureDataFetched();
+
 			return true;
 		} catch (error: any) {
 			isConnected.value = false;
