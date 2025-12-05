@@ -939,6 +939,7 @@ onBeforeUnmount(() => {
 	gap: 24px;
 	padding: 0 20px;
 	overflow: hidden;
+	margin-top: 16px;
 }
 
 .submit-text {
